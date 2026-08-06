@@ -1,0 +1,44 @@
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- A-Frame Basis -->
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <!-- MindAR für das Image Tracking -->
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <!-- A-Frame Extras für die 3D-Animationen aus Blender -->
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
+    <!-- Deine eigene Logik -->
+    <script src="./app.js"></script>
+  </head>
+  <body>
+    <a-scene mindar-image="imageTargetSrc: ./assets/targets.mind;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      
+      <a-assets>
+        <!-- Hier wird dein 3D-Modell geladen -->
+        <a-asset-item id="kodama-model" src="./assets/kodama_01.glb"></a-asset-item>
+        <!-- Hier wird dein Sound geladen (falls vorhanden) -->
+        <audio id="kodama-sound" src="./assets/sound.mp3" preload="auto"></audio>
+      </a-assets>
+
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      
+      <a-entity mindar-image-target="targetIndex: 0">
+        <!-- 
+          Dein Kodama: 
+          - kodama-logic: ruft dein Skript in der app.js auf
+          - animation-mixer: clip: * spielt Idle und Wobble gleichzeitig ab
+        -->
+        <a-gltf-model 
+          src="#kodama-model" 
+          position="0 0 0" 
+          scale="0.5 0.5 0.5" 
+          rotation="0 0 0" 
+          kodama-logic
+          animation-mixer="clip: *; loop: repeat"
+          sound="src: #kodama-sound; volume: 1">
+        </a-gltf-model>
+      </a-entity>
+      
+    </a-scene>
+  </body>
+</html>
