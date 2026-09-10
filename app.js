@@ -1,58 +1,66 @@
 // ============================================================
-// KODAMA AR - CREATIVE SPACE LEUPHANA (FINALE VERSION)
+// KODAMA AR - CREATIVE SPACE LEUPHANA (INDIVIDUEN-VERSION)
 // ============================================================
 
-// Umgerechnete Fixpunkte im Raum (in Metern)
+// Relativ berechnete Raumkoordinaten ab NFC-Startpunkt (in Metern)
 const PLANT_LOCATIONS = [
-  { name: "Pflanze / Fixpunkt 1", x: -3.62, y: 1.05, z: -4.62 },
-  { name: "Pflanze / Fixpunkt 2", x: -3.48, y: 0.86, z: -1.42 },
-  { name: "Pflanze / Fixpunkt 3", x: 0.69, y: 1.95, z: -2.64 }
+  { name: "Fixpunkt 1 (Links Vorne)", x: -3.62, y: 1.05, z: -4.62 },
+  { name: "Fixpunkt 2 (Links Hinten)", x: -3.48, y: 0.86, z: -1.42 },
+  { name: "Fixpunkt 3 (Rechts Mitte)", x: 0.69, y: 1.95, z: -2.64 }
 ];
 
-// 1. Zauberwald-Komponente (Spawnt Kodamas & löst Audio-Sperre)
+// 1. Zauberwald-Komponente (Erzeugt individuelle Kodamas)
 AFRAME.registerComponent('magic-forest', {
   init: function () {
     let sceneEl = this.el.sceneEl;
 
-    // Funktion zum aktiven Entsperren des Web-Audio-Kontexts auf Mobilgeräten
+    // Audio-Entsperrung für Mobilgeräte
     let unlockAudio = () => {
       if (sceneEl.audioListener && sceneEl.audioListener.context && sceneEl.audioListener.context.state === 'suspended') {
         sceneEl.audioListener.context.resume();
       }
-      
       let audioEl = document.querySelector('#kodama-sound');
       if (audioEl) {
-        audioEl.play().then(() => {
-          // Erfolgreich entsperrt
-        }).catch(() => {});
+        audioEl.play().then(() => {}).catch(() => {});
       }
     };
 
-    // Beim ersten Klick/Touch ODER beim AR-Start Audio freischalten
     window.addEventListener('click', unlockAudio, { once: true });
     window.addEventListener('touchstart', unlockAudio, { once: true });
     sceneEl.addEventListener('enter-vr', unlockAudio);
 
-    // Spawnen der Kodamas beim Aufruf des AR-Modus
+    // Spawnen beim AR-Start
     sceneEl.addEventListener('enter-vr', () => {
-      PLANT_LOCATIONS.forEach((loc) => {
+      PLANT_LOCATIONS.forEach((loc, index) => {
         let kodama = document.createElement('a-entity');
 
-        // 3D-Modell & Position
         kodama.setAttribute('gltf-model', '#kodama-model');
-        kodama.setAttribute('position', `${loc.x} ${loc.y} ${loc.z}`);
+        
+        // 1. Exakte & getrennte Positionierung
+        kodama.setAttribute('position', { x: loc.x, y: loc.y, z: loc.z });
 
-        // Skalierung & Skelett-Animationen
-        kodama.setAttribute('scale', '0.15 0.15 0.15');
-        kodama.setAttribute('animation-mixer', 'clip: *; loop: repeat');
+        // 2. Individuelle Blickrichtung (Zufällige Start-Rotation)
+        let initialYRotation = Math.floor(Math.random() * 360);
+        kodama.setAttribute('rotation', { x: 0, y: initialYRotation, z: 0 });
 
-        // Räumlicher 3D-Sound
+        // 3. Individuelle Körpergröße (zwischen 0.12 und 0.18)
+        let randomScale = (0.12 + Math.random() * 0.06).toFixed(3);
+        kodama.setAttribute('scale', `${randomScale} ${randomScale} ${randomScale}`);
+
+        // 4. Individuelles GLB-Animationstempo (kein synchrones Wackeln)
+        let randomAnimSpeed = (0.7 + Math.random() * 0.6).toFixed(2);
+        kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${randomAnimSpeed}`);
+
+        // 3D-Sound
         kodama.setAttribute('sound', 'src: #kodama-sound; autoplay: true; loop: true; volume: 0.8; distanceModel: inverse; maxDistance: 5;');
         
-        // Verhaltenslogik anhängen
-        kodama.setAttribute('kodama-logic', '');
+        // Individuelle Schwebeparameter übergeben
+        kodama.setAttribute('kodama-logic', {
+          speed: 0.8 + Math.random() * 0.8,    // Individuelles Schwebetempo
+          height: 0.05 + Math.random() * 0.08,  // Individuelle Schwebehöhe
+          id: index
+        });
 
-        // Sound explizit nach dem Laden abspielen
         kodama.addEventListener('sound-loaded', () => {
           if (kodama.components.sound) {
             kodama.components.sound.playSound();
@@ -65,29 +73,54 @@ AFRAME.registerComponent('magic-forest', {
   }
 });
 
-// 2. Kodama-Verhaltenslogik & Bewegungsmuster
+// 2. Erweiterte KI- & Bewegungslogik
 AFRAME.registerComponent('kodama-logic', {
   schema: {
     speed: { type: 'number', default: 1 },
-    height: { type: 'number', default: 0.08 }
+    height: { type: 'number', default: 0.08 },
+    id: { type: 'number', default: 0 }
   },
 
   init: function () {
-    // Startkoordinaten des jeweiligen Kodamas nach dem Laden sichern
+    // Startkoordinaten und Start-Rotation sichern
     setTimeout(() => {
-      this.startX = this.el.object3D.position.x;
-      this.startY = this.el.object3D.position.y;
-      this.startZ = this.el.object3D.position.z;
-    }, 150);
+      let currentPos = this.el.object3D.position;
+      let currentRot = this.el.object3D.rotation;
 
-    this.time = Math.random() * 100;
+      this.startX = currentPos.x;
+      this.startY = currentPos.y;
+      this.startZ = currentPos.z;
+      this.startRotY = THREE.MathUtils.radToDeg(currentRot.y);
+    }, 200);
+
+    // Phasierungs-Offset für die Sinus-Schwebebewegung
+    this.time = Math.random() * 1000;
     this.isInteracting = false;
 
-    // Asynchroner Rhythmus: Alle 6 bis 12 Sekunden eine zufällige Aktion
-    let randomInterval = 6000 + (Math.random() * 6000);
-    setInterval(() => {
-      this.checkSpontaneousAction();
-    }, randomInterval);
+    // Zeitlich versetzter Start der Entscheidungslogik
+    let initialDelay = 2000 + (Math.random() * 4000);
+    setTimeout(() => {
+      let randomInterval = 5000 + (Math.random() * 6000);
+      setInterval(() => {
+        this.checkSpontaneousAction();
+      }, randomInterval);
+    }, initialDelay);
+  },
+
+  // Hilfsfunktion: Dreht den Geist geschmeidig in Flugrichtung
+  lookAtTarget: function (targetX, targetZ, duration) {
+    let currentPos = this.el.object3D.position;
+    let dx = targetX - currentPos.x;
+    let dz = targetZ - currentPos.z;
+    let angleRad = Math.atan2(dx, dz);
+    let angleDeg = THREE.MathUtils.radToDeg(angleRad);
+
+    this.el.setAttribute('animation__rotate', {
+      property: 'rotation',
+      to: `0 ${angleDeg} 0`,
+      dur: Math.min(1000, duration / 2),
+      easing: 'easeInOutQuad'
+    });
   },
 
   checkSpontaneousAction: function () {
@@ -95,111 +128,130 @@ AFRAME.registerComponent('kodama-logic', {
 
     let roll = Math.random();
 
-    if (roll < 0.25) {
-      // 25% Chance: Zu einer der anderen Pflanzen/Fixpunkte fliegen
+    if (roll < 0.30) {
       this.flyToPlant();
-    } else if (roll < 0.40) {
-      // 15% Chance: Zum Besucher fliegen
+    } else if (roll < 0.45) {
       this.flyToUser();
-    } else if (roll < 0.55) {
-      // 15% Chance: Zu einem zufälligen Ort fliegen & verweilen
+    } else if (roll < 0.65) {
       this.flyToRandomSpotAndIdle();
-    } else if (roll < 0.70) {
-      // 15% Chance: Sanft umhergleiten
+    } else if (roll < 0.80) {
       this.floatAround();
     }
-    // 30% Chance: In Ruhe an der Startposition schwebend verharren
   },
 
-  // Fliegt zu einem zufälligen Fixpunkt im Raum
   flyToPlant: function () {
     this.isInteracting = true;
     let targetPlant = PLANT_LOCATIONS[Math.floor(Math.random() * PLANT_LOCATIONS.length)];
+    let flightDur = 4000 + Math.random() * 1500;
+
+    // Erst in Richtung Ziel drehen, dann fliegen
+    this.lookAtTarget(targetPlant.x, targetPlant.z, flightDur);
 
     this.el.setAttribute('animation__fly', {
       property: 'position',
       to: `${targetPlant.x} ${targetPlant.y} ${targetPlant.z}`,
-      dur: 4500,
+      dur: flightDur,
       easing: 'easeInOutSine'
     });
 
     setTimeout(() => {
       this.returnHome();
-    }, 8500);
+    }, flightDur + 3000 + Math.random() * 2000);
   },
 
-  // Fliegt ca. 1 Meter vor das Gesicht des Nutzers
   flyToUser: function () {
     this.isInteracting = true;
+    let userX = 0;
+    let userZ = -1.0;
+    let flightDur = 3000 + Math.random() * 1000;
+
+    this.lookAtTarget(userX, userZ, flightDur);
 
     this.el.setAttribute('animation__fly', {
       property: 'position',
-      to: '0 1.5 -1.0',
-      dur: 3500,
+      to: `${userX} 1.4 ${userZ}`,
+      dur: flightDur,
       easing: 'easeInOutSine'
     });
 
     setTimeout(() => {
       this.returnHome();
-    }, 6500);
+    }, flightDur + 2500 + Math.random() * 2000);
   },
 
-  // Fliegt an einen zufälligen Punkt in der Nähe
   flyToRandomSpotAndIdle: function () {
     this.isInteracting = true;
 
     let randX = this.startX + (Math.random() - 0.5) * 2.5;
-    let randY = this.startY + (Math.random() * 0.6);
+    let randY = this.startY + (Math.random() * 0.5) - 0.25;
     let randZ = this.startZ + (Math.random() - 0.5) * 2.5;
+    let flightDur = 3000 + Math.random() * 1000;
+
+    this.lookAtTarget(randX, randZ, flightDur);
 
     this.el.setAttribute('animation__fly', {
       property: 'position',
       to: `${randX} ${randY} ${randZ}`,
-      dur: 3000,
+      dur: flightDur,
       easing: 'easeInOutSine'
     });
 
     setTimeout(() => {
       this.returnHome();
-    }, 7000);
+    }, flightDur + 3000 + Math.random() * 2000);
   },
 
-  // Sanftes Umhergleiten
   floatAround: function () {
     this.isInteracting = true;
 
     let randX = this.startX + (Math.random() - 0.5) * 3.5;
-    let randY = this.startY + (Math.random() * 0.8);
+    let randY = this.startY + (Math.random() * 0.6) - 0.3;
     let randZ = this.startZ + (Math.random() - 0.5) * 3.5;
+    let flightDur = 5000 + Math.random() * 2000;
+
+    this.lookAtTarget(randX, randZ, flightDur);
 
     this.el.setAttribute('animation__fly', {
       property: 'position',
       to: `${randX} ${randY} ${randZ}`,
-      dur: 6000,
+      dur: flightDur,
       easing: 'linear'
     });
 
     setTimeout(() => {
       this.returnHome();
-    }, 6000);
+    }, flightDur);
   },
 
-  // Rückflug zur Heimatposition
   returnHome: function () {
+    let returnDur = 3500 + Math.random() * 1000;
+    this.lookAtTarget(this.startX, this.startZ, returnDur);
+
     this.el.setAttribute('animation__fly', {
       property: 'position',
       to: `${this.startX} ${this.startY} ${this.startZ}`,
-      dur: 3500,
+      dur: returnDur,
       easing: 'easeInOutSine'
     });
 
     setTimeout(() => {
-      this.isInteracting = false;
-      this.el.removeAttribute('animation__fly');
-    }, 3500);
+      // Nach der Rückkehr wieder sanft in die ursprüngliche Blickrichtung drehen
+      this.el.setAttribute('animation__rotate', {
+        property: 'rotation',
+        to: `0 ${this.startRotY} 0`,
+        dur: 1000,
+        easing: 'easeInOutQuad'
+      });
+
+      setTimeout(() => {
+        this.isInteracting = false;
+        this.el.removeAttribute('animation__fly');
+        this.el.removeAttribute('animation__rotate');
+      }, 1000);
+    }, returnDur);
   },
 
-  // Kontinuierliche Schwebebewegung (Idle)
+  // Individuelles Sinus-Schweben (Idle)
   tick: function (time, timeDelta) {
     if (!this.isInteracting && this.startY !== undefined) {
       this.time += timeDelta / 1000;
