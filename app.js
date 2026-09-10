@@ -1,45 +1,66 @@
 const PLANT_LOCATIONS = [
-  { name: "Pflanze 1 (Fenster)", x: 1.8, y: 0.9, z: -2.0 },
-  { name: "Pflanze 2 (Eingang)", x: -2.2, y: 1.1, z: -1.5 },
-  { name: "Pflanze 3 (Leseecke)", x: 0.5, y: 1.3, z: -3.0 }
+  { name: "Fixpunkt 1", x: 0.35, y: 1.86, z: -0.40 },
+  { name: "Fixpunkt 2", x: 0.49, y: 1.67, z: -3.60 },
+  { name: "Fixpunkt 3", x: 4.66, y: 2.76, z: -2.38 }
 ];
 
+// 1. Zauberwald-Komponente (Spawnt Kodamas & löst Audio-Sperre)
 AFRAME.registerComponent('magic-forest', {
-  schema: {
-    count: { type: 'number', default: 4 } // Anzahl der Geister
-  },
-
   init: function () {
-    this.el.sceneEl.addEventListener('enter-vr', () => {
+    let sceneEl = this.el.sceneEl;
+
+    // Funktion zum aktiven Entsperren des Web-Audio-Kontexts auf Mobilgeräten
+    let unlockAudio = () => {
+      if (sceneEl.audioListener && sceneEl.audioListener.context && sceneEl.audioListener.context.state === 'suspended') {
+        sceneEl.audioListener.context.resume();
+      }
       
       let audioEl = document.querySelector('#kodama-sound');
       if (audioEl) {
-        audioEl.play().then(() => audioEl.pause()).catch(() => {});
+        audioEl.play().then(() => {
+          // Erfolgreich entsperrt
+        }).catch(() => {});
       }
+    };
 
-      for (let i = 0; i < this.data.count; i++) {
+    // Beim ersten Klick/Touch ODER beim AR-Start Audio freischalten
+    window.addEventListener('click', unlockAudio, { once: true });
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+    sceneEl.addEventListener('enter-vr', unlockAudio);
+
+    // Spawnen der Kodamas beim Aufruf des AR-Modus
+    sceneEl.addEventListener('enter-vr', () => {
+      PLANT_LOCATIONS.forEach((loc) => {
         let kodama = document.createElement('a-entity');
 
+        // 3D-Modell & Position
         kodama.setAttribute('gltf-model', '#kodama-model');
+        kodama.setAttribute('position', `${loc.x} ${loc.y} ${loc.z}`);
 
-        let randX = (Math.random() - 0.5) * 5;
-        let randY = 0.6 + (Math.random() * 1.2);
-        let randZ = (Math.random() - 0.5) * 5;
-        kodama.setAttribute('position', `${randX} ${randY} ${randZ}`);
-
+        // Skalierung & Skelett-Animationen
         kodama.setAttribute('scale', '0.15 0.15 0.15');
         kodama.setAttribute('animation-mixer', 'clip: *; loop: repeat');
 
-        kodama.setAttribute('sound', 'src: #kodama-sound; autoplay: true; loop: true; volume: 0.7; distanceModel: inverse; maxDistance: 4;');
-
+        // Räumlicher 3D-Sound
+        kodama.setAttribute('sound', 'src: #kodama-sound; autoplay: true; loop: true; volume: 0.8; distanceModel: inverse; maxDistance: 5;');
+        
+        // Verhaltenslogik anhängen
         kodama.setAttribute('kodama-logic', '');
 
-        this.el.sceneEl.appendChild(kodama);
-      }
+        // Sound explizit nach dem Laden abspielen
+        kodama.addEventListener('sound-loaded', () => {
+          if (kodama.components.sound) {
+            kodama.components.sound.playSound();
+          }
+        });
+
+        sceneEl.appendChild(kodama);
+      });
     });
   }
 });
 
+// 2. Kodama-Verhaltenslogik & Bewegungsmuster
 AFRAME.registerComponent('kodama-logic', {
   schema: {
     speed: { type: 'number', default: 1 },
@@ -47,6 +68,7 @@ AFRAME.registerComponent('kodama-logic', {
   },
 
   init: function () {
+    // Startkoordinaten des jeweiligen Kodamas nach dem Laden sichern
     setTimeout(() => {
       this.startX = this.el.object3D.position.x;
       this.startY = this.el.object3D.position.y;
@@ -56,6 +78,7 @@ AFRAME.registerComponent('kodama-logic', {
     this.time = Math.random() * 100;
     this.isInteracting = false;
 
+    // Asynchroner Rhythmus: Alle 6 bis 12 Sekunden eine zufällige Aktion
     let randomInterval = 6000 + (Math.random() * 6000);
     setInterval(() => {
       this.checkSpontaneousAction();
@@ -68,16 +91,22 @@ AFRAME.registerComponent('kodama-logic', {
     let roll = Math.random();
 
     if (roll < 0.25) {
+      // 25% Chance: Zu einer der anderen Pflanzen/Fixpunkte fliegen
       this.flyToPlant();
     } else if (roll < 0.40) {
+      // 15% Chance: Zum Besucher fliegen
       this.flyToUser();
     } else if (roll < 0.55) {
+      // 15% Chance: Zu einem zufälligen Ort fliegen & verweilen
       this.flyToRandomSpotAndIdle();
     } else if (roll < 0.70) {
+      // 15% Chance: Sanft umhergleiten
       this.floatAround();
     }
+    // 30% Chance: In Ruhe an der Startposition schwebend verharren
   },
 
+  // Fliegt zu einem zufälligen Fixpunkt im Raum
   flyToPlant: function () {
     this.isInteracting = true;
     let targetPlant = PLANT_LOCATIONS[Math.floor(Math.random() * PLANT_LOCATIONS.length)];
@@ -94,6 +123,7 @@ AFRAME.registerComponent('kodama-logic', {
     }, 8500);
   },
 
+  // Fliegt ca. 1 Meter vor das Gesicht des Nutzers
   flyToUser: function () {
     this.isInteracting = true;
 
@@ -129,6 +159,7 @@ AFRAME.registerComponent('kodama-logic', {
     }, 7000);
   },
 
+  // Sanftes Umhergleiten
   floatAround: function () {
     this.isInteracting = true;
 
@@ -148,6 +179,7 @@ AFRAME.registerComponent('kodama-logic', {
     }, 6000);
   },
 
+  // Rückflug zur Heimatposition
   returnHome: function () {
     this.el.setAttribute('animation__fly', {
       property: 'position',
@@ -162,6 +194,7 @@ AFRAME.registerComponent('kodama-logic', {
     }, 3500);
   },
 
+  // Kontinuierliche Schwebebewegung (Idle)
   tick: function (time, timeDelta) {
     if (!this.isInteracting && this.startY !== undefined) {
       this.time += timeDelta / 1000;
