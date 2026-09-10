@@ -1,7 +1,12 @@
+// ============================================================
+// KODAMA AR - CREATIVE SPACE LEUPHANA (FINALE VERSION)
+// ============================================================
+
+// Umgerechnete Fixpunkte im Raum (in Metern)
 const PLANT_LOCATIONS = [
-  { name: "Fixpunkt 1", x: 0.35, y: 1.86, z: -0.40 },
-  { name: "Fixpunkt 2", x: 0.49, y: 1.67, z: -3.60 },
-  { name: "Fixpunkt 3", x: 4.66, y: 2.76, z: -2.38 }
+  { name: "Pflanze / Fixpunkt 1", x: -3.62, y: 1.05, z: -4.62 },
+  { name: "Pflanze / Fixpunkt 2", x: -3.48, y: 0.86, z: -1.42 },
+  { name: "Pflanze / Fixpunkt 3", x: 0.69, y: 1.95, z: -2.64 }
 ];
 
 // 1. Zauberwald-Komponente (Spawnt Kodamas & löst Audio-Sperre)
