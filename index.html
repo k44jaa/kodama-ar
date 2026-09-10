@@ -5,22 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Creative Space - Kodama AR</title>
 
+  <!-- A-Frame & Animation Mixer Bibliotheken -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
+  <!-- Deine Logik-Datei -->
   <script src="./app.js"></script>
 </head>
 <body style="margin: 0; overflow: hidden;">
 
+  <!-- AR-Szene mit Zauberwald-Komponente -->
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
-    magic-forest="count: 4">
+    magic-forest>
 
+    <!-- Assets Preloading mit CORS-Support für Audio -->
     <a-assets>
       <a-asset-item id="kodama-model" src="./assets/kodama_01.glb"></a-asset-item>
-      <audio id="kodama-sound" src="./assets/sound.mp3" preload="auto"></audio>
+      <audio id="kodama-sound" src="./assets/sound.mp3" preload="auto" crossorigin="anonymous"></audio>
     </a-assets>
 
+    <!-- Kamera -->
     <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
 
   </a-scene>
