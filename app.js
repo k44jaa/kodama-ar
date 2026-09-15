@@ -9,8 +9,8 @@ AFRAME.registerComponent('magic-forest', {
   init: function () {
     let sceneEl = this.el.sceneEl;
 
+    // Wird ausgelöst, sobald der AR-Kamera-Modus aktiv wird
     sceneEl.addEventListener('enter-vr', () => {
-      // Audio-Wiedergabe beim AR-Start erzwingen
       let audioEl = document.querySelector('#kodama-sound');
       if (audioEl && audioEl.paused) {
         audioEl.play().catch(() => {});
@@ -25,18 +25,18 @@ AFRAME.registerComponent('magic-forest', {
         kodama.setAttribute('gltf-model', '#kodama-model');
         kodama.setAttribute('position', { x: loc.x, y: loc.y, z: loc.z });
 
-        // Zufällige Blickrichtung & Größe
+        // Zufällige Blickrichtung (0° bis 360°) & leicht variierende Größe
         let initialYRotation = Math.floor(Math.random() * 360);
         kodama.setAttribute('rotation', { x: 0, y: initialYRotation, z: 0 });
 
         let randomScale = (0.13 + Math.random() * 0.04).toFixed(3);
         kodama.setAttribute('scale', `${randomScale} ${randomScale} ${randomScale}`);
 
-        // Animationen
+        // Animation aus Blender
         let randomAnimSpeed = (0.8 + Math.random() * 0.4).toFixed(2);
         kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${randomAnimSpeed}`);
 
-        // Sound-Attribut mit vergrößertem Radius (maxDistance: 30)
+        // 3D-Sound mit hoher Hördistanz (maxDistance: 30)
         kodama.setAttribute('sound', 'src: #kodama-sound; autoplay: true; loop: true; volume: 1.0; distanceModel: inverse; refDistance: 2; maxDistance: 30;');
 
         // Ortsfeste Schwebelogik
