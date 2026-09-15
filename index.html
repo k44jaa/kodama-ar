@@ -13,15 +13,14 @@
   <script src="./app.js"></script>
 
   <style>
-    /* Start-Overlay */
     #overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(10, 20, 15, 0.9);
-      z-index: 99999;
+      background: rgba(10, 20, 15, 0.85);
+      z-index: 9999;
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -29,7 +28,7 @@
       color: white;
       font-family: system-ui, -apple-system, sans-serif;
       text-align: center;
-      padding: 24px;
+      padding: 20px;
       box-sizing: border-box;
     }
 
@@ -37,35 +36,28 @@
       background: #4CAF50;
       color: white;
       border: none;
-      padding: 18px 36px;
-      font-size: 20px;
+      padding: 16px 32px;
+      font-size: 18px;
       font-weight: bold;
-      border-radius: 50px;
+      border-radius: 30px;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-      margin-top: 24px;
-    }
-
-    #start-btn:active {
-      transform: scale(0.95);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      margin-top: 20px;
     }
   </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
 
-  <!-- Start-Overlay für Audio-Sperre & sauberen AR-Start -->
+  <!-- Start-Overlay zum Entsperren von Audio & Kamera -->
   <div id="overlay">
-    <h1 style="margin-bottom: 8px;">Kodama AR</h1>
-    <p style="opacity: 0.9; max-width: 320px; line-height: 1.4;">
-      Halte dein Handy an den NFC-Chip und blicke geradeaus in den Raum.
-    </p>
+    <h2>Willkommen im Creative Space</h2>
+    <p>Blicke beim Starten geradeaus in den Raum.</p>
     <button id="start-btn">✨ AR & Sound starten</button>
   </div>
 
-  <!-- A-Frame Szene: vr-mode-ui="enabled: false" verhindert verwirrende VR-Buttons -->
+  <!-- A-Frame AR-Szene mit funktionierendem Kamera-Stream -->
   <a-scene 
-    webxr="optionalFeatures: hit-test, local-floor; referenceSpaceType: local-floor"
-    vr-mode-ui="enabled: false"
+    webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
     magic-forest>
 
     <a-assets>
@@ -80,27 +72,25 @@
   <script>
     document.querySelector('#start-btn').addEventListener('click', function() {
       let scene = document.querySelector('a-scene');
+      let audioEl = document.querySelector('#kodama-sound');
 
-      // 1. A-Frame Web Audio Context explizit entsperren
+      // 1. Audio direkt durch den Nutzerklick freischalten
+      if (audioEl) {
+        audioEl.play().catch(e => console.log("Audio Play:", e));
+      }
+
+      // 2. WebAudio Context in A-Frame reaktivieren
       if (scene.audioListener && scene.audioListener.context) {
         if (scene.audioListener.context.state === 'suspended') {
           scene.audioListener.context.resume();
         }
       }
 
-      // 2. HTML Audio Element anspielen
-      let audioEl = document.querySelector('#kodama-sound');
-      if (audioEl) {
-        audioEl.play().catch(err => console.log("Audio play error:", err));
-      }
-
-      // 3. Overlay ausblenden
+      // 3. Overlay entfernen
       document.querySelector('#overlay').style.display = 'none';
 
-      // 4. Gezielt AR-Modus starten (statt VR)
-      if (scene.enterAR) {
-        scene.enterAR();
-      } else if (scene.enterVR) {
+      // 4. Standard A-Frame AR/VR Modus starten (öffnet die Kamera)
+      if (scene.enterVR) {
         scene.enterVR();
       }
     });
