@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Creative Space - Kodama AR</title>
 
-  <!-- A-Frame & Extras -->
+  <!-- A-Frame & Extras Bibliotheken -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
@@ -58,7 +58,7 @@
 </head>
 <body>
 
-  <!-- Start-Overlay -->
+  <!-- Start-Overlay für Freigabe von Kamera & Ton -->
   <div id="overlay">
     <h1 style="margin-bottom: 8px;">Kodama AR</h1>
     <p style="opacity: 0.9; max-width: 320px; line-height: 1.4;">
@@ -68,7 +68,7 @@
     <button id="start-btn">✨ AR & Sound starten</button>
   </div>
 
-  <!-- A-Frame Szene -->
+  <!-- A-Frame AR-Szene mit Kamera-Stream -->
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
     vr-mode-ui="enabled: false"
@@ -76,7 +76,6 @@
 
     <a-assets>
       <a-asset-item id="kodama-model" src="./assets/kodama_01.glb"></a-asset-item>
-      <audio id="kodama-sound" src="./assets/sound.mp3" preload="auto" crossorigin="anonymous" loop></audio>
     </a-assets>
 
     <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
@@ -84,33 +83,31 @@
   </a-scene>
 
   <script>
+    // 2D-Audio (Organischer Sound mit wechselnder Lautstärke & zufälligem Timing)
+    const kodamaSound = new Audio('./assets/sound.mp3');
+
+    function playOrganicKodamaSound() {
+      kodamaSound.currentTime = 0;
+      // Zufällige Lautstärke (30% bis 90%), damit es lebendig wirkt
+      kodamaSound.volume = 0.3 + Math.random() * 0.6;
+      kodamaSound.play().catch(err => console.log("Audio Info:", err));
+
+      // Nächstes Klappern/Geräusch nach zufällig 4 bis 10 Sekunden
+      let nextInterval = 4000 + Math.random() * 6000;
+      setTimeout(playOrganicKodamaSound, nextInterval);
+    }
+
     document.querySelector('#start-btn').addEventListener('click', function() {
       let scene = document.querySelector('a-scene');
-      let audioEl = document.querySelector('#kodama-sound');
 
-      // 1. Audio direkt durch Klick-Geste abspielen
-      if (audioEl) {
-        audioEl.muted = false;
-        audioEl.volume = 1.0;
-        audioEl.play().catch(function(err) {
-          console.log("Audio Play Fehler:", err);
-        });
-      }
+      // 1. Audio-Schleife beim Button-Klick starten
+      playOrganicKodamaSound();
 
-      // 2. WebAudio Context in A-Frame entsperren
-      if (scene.audioListener && scene.audioListener.context) {
-        if (scene.audioListener.context.state === 'suspended') {
-          scene.audioListener.context.resume();
-        }
-      }
-
-      // 3. Overlay ausblenden
+      // 2. Overlay ausblenden
       document.querySelector('#overlay').style.display = 'none';
 
-      // 4. AR-Modus explizit starten (enterAR für Kamera!)
-      if (scene.enterAR) {
-        scene.enterAR();
-      } else if (scene.enterVR) {
+      // 3. AR-Kameramodus in A-Frame auslösen
+      if (scene.enterVR) {
         scene.enterVR();
       }
     });
