@@ -51,18 +51,18 @@
   <!-- Start-Overlay zum Entsperren von Audio & Kamera -->
   <div id="overlay">
     <h2>Willkommen im Creative Space</h2>
-    <p>Blicke beim Starten geradeaus in den Raum.</p>
+    <p>Blicke beim Starten geradeaus in den Raum.<br><small>(Stummschalter am Handy bitte ausschalten)</small></p>
     <button id="start-btn">✨ AR & Sound starten</button>
   </div>
 
-  <!-- A-Frame AR-Szene mit funktionierendem Kamera-Stream -->
+  <!-- A-Frame AR-Szene mit Kamera-Stream -->
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
     magic-forest>
 
     <a-assets>
       <a-asset-item id="kodama-model" src="./assets/kodama_01.glb"></a-asset-item>
-      <audio id="kodama-sound" src="./assets/sound.mp3" preload="auto" crossorigin="anonymous"></audio>
+      <audio id="kodama-sound" src="./assets/sound.mp3" preload="auto" crossorigin="anonymous" loop></audio>
     </a-assets>
 
     <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
@@ -76,7 +76,10 @@
 
       // 1. Audio direkt durch den Nutzerklick freischalten
       if (audioEl) {
-        audioEl.play().catch(e => console.log("Audio Play:", e));
+        audioEl.muted = false;
+        audioEl.play().then(() => {
+          console.log("Audio gestartet");
+        }).catch(e => console.log("Audio Play Error:", e));
       }
 
       // 2. WebAudio Context in A-Frame reaktivieren
@@ -89,7 +92,7 @@
       // 3. Overlay entfernen
       document.querySelector('#overlay').style.display = 'none';
 
-      // 4. Standard A-Frame AR/VR Modus starten (öffnet die Kamera)
+      // 4. Standard A-Frame AR/VR Modus starten
       if (scene.enterVR) {
         scene.enterVR();
       }
