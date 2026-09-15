@@ -9,10 +9,10 @@ AFRAME.registerComponent('magic-forest', {
   init: function () {
     let sceneEl = this.el.sceneEl;
 
-    // Erzeugt die Kodamas beim Starten der AR-Kamera
     sceneEl.addEventListener('enter-vr', () => {
+      // Audio-Wiedergabe beim AR-Start erzwingen
       let audioEl = document.querySelector('#kodama-sound');
-      if (audioEl) {
+      if (audioEl && audioEl.paused) {
         audioEl.play().catch(() => {});
       }
 
@@ -36,8 +36,8 @@ AFRAME.registerComponent('magic-forest', {
         let randomAnimSpeed = (0.8 + Math.random() * 0.4).toFixed(2);
         kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${randomAnimSpeed}`);
 
-        // 3D-Sound
-        kodama.setAttribute('sound', 'src: #kodama-sound; autoplay: true; loop: true; volume: 0.8; distanceModel: inverse; maxDistance: 6;');
+        // Sound-Attribut mit vergrößertem Radius (maxDistance: 30)
+        kodama.setAttribute('sound', 'src: #kodama-sound; autoplay: true; loop: true; volume: 1.0; distanceModel: inverse; refDistance: 2; maxDistance: 30;');
 
         // Ortsfeste Schwebelogik
         kodama.setAttribute('kodama-logic', {
