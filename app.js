@@ -1,7 +1,8 @@
-// NFC-Chip Raumposition: 13.021ft (X), 16.466ft (Z-Tiefe), 2.672ft (Y-Höhe)
-// Fixpunkt 1: X = -3.62m, Y = +1.05m, Z = -4.62m
-// Fixpunkt 2: X = -3.48m, Y = +0.86m, Z = -1.42m
-// Fixpunkt 3: X = +0.69m, Y = +1.95m, Z = -2.64m
+// ============================================================
+// KODAMA AR - CREATIVE SPACE LEUPHANA
+// Exakt berechnete Raumkoordinaten relativ zum NFC-Chip
+// ============================================================
+
 const PLANT_LOCATIONS = [
   { name: "Fixpunkt 1 (Links Vorne)", x: -3.62, y: 1.05, z: -4.62 },
   { name: "Fixpunkt 2 (Links Hinten)", x: -3.48, y: 0.86, z: -1.42 },
@@ -13,6 +14,11 @@ AFRAME.registerComponent('magic-forest', {
     let sceneEl = this.el.sceneEl;
 
     sceneEl.addEventListener('enter-vr', () => {
+      let audioEl = document.querySelector('#kodama-sound');
+      if (audioEl && audioEl.paused) {
+        audioEl.play().catch(() => {});
+      }
+
       if (this.spawned) return;
       this.spawned = true;
 
