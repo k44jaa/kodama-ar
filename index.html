@@ -5,14 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Creative Space - Kodama AR</title>
 
-  <!-- A-Frame & Animation Mixer Bibliotheken -->
+  <!-- A-Frame & Extras -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
-  <!-- Logik-Skript -->
+  <!-- Deine Logik-Datei -->
   <script src="./app.js"></script>
+
+  <style>
+    /* Start-Overlay für garantierten Sound auf Smartphones */
+    #overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(10, 20, 15, 0.85);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    #start-btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
+
+  <!-- Start-Overlay für den Audio-Entsperrklick -->
+  <div id="overlay">
+    <h2>Willkommen im Creative Space</h2>
+    <p>Blicke beim Starten bitte geradeaus in den Raum.</p>
+    <button id="start-btn">✨ AR & Sound starten</button>
+  </div>
 
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
@@ -26,6 +68,27 @@
     <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
 
   </a-scene>
+
+  <script>
+    // Start-Button klickt Audio frei und öffnet AR
+    document.querySelector('#start-btn').addEventListener('click', function() {
+      let audioEl = document.querySelector('#kodama-sound');
+      if (audioEl) {
+        audioEl.play().then(() => {
+          console.log("Audio erfolgreich gestartet");
+        }).catch(err => console.log("Audio-Fehler:", err));
+      }
+
+      // Overlay ausblenden
+      document.querySelector('#overlay').style.display = 'none';
+
+      // AR-Modus der Szene triggern
+      let scene = document.querySelector('a-scene');
+      if (scene.enterVR) {
+        scene.enterVR();
+      }
+    });
+  </script>
 
 </body>
 </html>
