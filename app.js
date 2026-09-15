@@ -1,23 +1,21 @@
-// Raumkoordinaten relativ zum NFC-Chip
-// Mit local-floor entspricht Y der exakten Höhe über dem Boden!
+// Raumkoordinaten relativ zum NFC-Chip (in Metern)
 const PLANT_LOCATIONS = [
-  { name: "Fixpunkt 1 (Links Vorne)", x: -3.62, y: 1.86, z: -4.62 },
-  { name: "Fixpunkt 2 (Links Hinten)", x: -3.48, y: 1.67, z: -1.42 },
-  { name: "Fixpunkt 3 (Rechts Mitte)", x: 0.69, y: 2.76, z: -2.64 }
+  { name: "Fixpunkt 1 (Links Vorne)", x: -3.62, y: 1.05, z: -4.62 },
+  { name: "Fixpunkt 2 (Links Hinten)", x: -3.48, y: 0.86, z: -1.42 },
+  { name: "Fixpunkt 3 (Rechts Mitte)", x: 0.69, y: 1.95, z: -2.64 }
 ];
 
 AFRAME.registerComponent('magic-forest', {
   init: function () {
     let sceneEl = this.el.sceneEl;
 
-    // Triggert erst, wenn der AR-Modus aktiv ist
+    // Erzeugt die Kodamas beim Starten der AR-Kamera
     sceneEl.addEventListener('enter-vr', () => {
-      // Audio Listener sicherstellen
-      if (sceneEl.audioListener && sceneEl.audioListener.context) {
-        sceneEl.audioListener.context.resume();
+      let audioEl = document.querySelector('#kodama-sound');
+      if (audioEl) {
+        audioEl.play().catch(() => {});
       }
 
-      // Nur einmalig erzeugen
       if (this.spawned) return;
       this.spawned = true;
 
@@ -25,23 +23,20 @@ AFRAME.registerComponent('magic-forest', {
         let kodama = document.createElement('a-entity');
 
         kodama.setAttribute('gltf-model', '#kodama-model');
-        
-        // Feste Position (Y = Höhe über dem Boden)
         kodama.setAttribute('position', { x: loc.x, y: loc.y, z: loc.z });
 
-        // Zufällige Start-Blickrichtung (0° bis 360°)
+        // Zufällige Blickrichtung & Größe
         let initialYRotation = Math.floor(Math.random() * 360);
         kodama.setAttribute('rotation', { x: 0, y: initialYRotation, z: 0 });
 
-        // Skalierung
         let randomScale = (0.13 + Math.random() * 0.04).toFixed(3);
         kodama.setAttribute('scale', `${randomScale} ${randomScale} ${randomScale}`);
 
-        // Animation
+        // Animationen
         let randomAnimSpeed = (0.8 + Math.random() * 0.4).toFixed(2);
         kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${randomAnimSpeed}`);
 
-        // Räumlicher 3D-Sound
+        // 3D-Sound
         kodama.setAttribute('sound', 'src: #kodama-sound; autoplay: true; loop: true; volume: 0.8; distanceModel: inverse; maxDistance: 6;');
 
         // Ortsfeste Schwebelogik
