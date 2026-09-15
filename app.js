@@ -1,4 +1,7 @@
-// Raumkoordinaten relativ zum NFC-Chip (in Metern)
+// NFC-Chip Raumposition: 13.021ft (X), 16.466ft (Z-Tiefe), 2.672ft (Y-Höhe)
+// Fixpunkt 1: X = -3.62m, Y = +1.05m, Z = -4.62m
+// Fixpunkt 2: X = -3.48m, Y = +0.86m, Z = -1.42m
+// Fixpunkt 3: X = +0.69m, Y = +1.95m, Z = -2.64m
 const PLANT_LOCATIONS = [
   { name: "Fixpunkt 1 (Links Vorne)", x: -3.62, y: 1.05, z: -4.62 },
   { name: "Fixpunkt 2 (Links Hinten)", x: -3.48, y: 0.86, z: -1.42 },
@@ -9,13 +12,7 @@ AFRAME.registerComponent('magic-forest', {
   init: function () {
     let sceneEl = this.el.sceneEl;
 
-    // Wird ausgelöst, sobald der AR-Kamera-Modus aktiv wird
     sceneEl.addEventListener('enter-vr', () => {
-      let audioEl = document.querySelector('#kodama-sound');
-      if (audioEl && audioEl.paused) {
-        audioEl.play().catch(() => {});
-      }
-
       if (this.spawned) return;
       this.spawned = true;
 
@@ -25,19 +22,17 @@ AFRAME.registerComponent('magic-forest', {
         kodama.setAttribute('gltf-model', '#kodama-model');
         kodama.setAttribute('position', { x: loc.x, y: loc.y, z: loc.z });
 
-        // Zufällige Blickrichtung (0° bis 360°) & leicht variierende Größe
+        // Zufällige Blickrichtung (0° bis 360°)
         let initialYRotation = Math.floor(Math.random() * 360);
         kodama.setAttribute('rotation', { x: 0, y: initialYRotation, z: 0 });
 
+        // Individuelle Skalierung (Größe)
         let randomScale = (0.13 + Math.random() * 0.04).toFixed(3);
         kodama.setAttribute('scale', `${randomScale} ${randomScale} ${randomScale}`);
 
         // Animation aus Blender
         let randomAnimSpeed = (0.8 + Math.random() * 0.4).toFixed(2);
         kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${randomAnimSpeed}`);
-
-        // 3D-Sound mit hoher Hördistanz (maxDistance: 30)
-        kodama.setAttribute('sound', 'src: #kodama-sound; autoplay: true; loop: true; volume: 1.0; distanceModel: inverse; refDistance: 2; maxDistance: 30;');
 
         // Ortsfeste Schwebelogik
         kodama.setAttribute('kodama-logic', {
