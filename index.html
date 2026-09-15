@@ -18,6 +18,7 @@
       overflow: hidden;
     }
 
+    /* Start-Overlay */
     #overlay {
       position: fixed;
       top: 0;
@@ -75,6 +76,7 @@
 
     <a-assets>
       <a-asset-item id="kodama-model" src="./assets/kodama_01.glb"></a-asset-item>
+      <audio id="kodama-sound" src="./assets/sound.mp3" preload="auto" crossorigin="anonymous" loop></audio>
     </a-assets>
 
     <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
@@ -82,29 +84,33 @@
   </a-scene>
 
   <script>
-    let kodamaAudio = null;
-
     document.querySelector('#start-btn').addEventListener('click', function() {
       let scene = document.querySelector('a-scene');
+      let audioEl = document.querySelector('#kodama-sound');
 
-      // 1. Direktes JavaScript Audio-Objekt (zuverlässige Wiedergabe)
-      if (!kodamaAudio) {
-        kodamaAudio = new Audio('./assets/sound.mp3');
-        kodamaAudio.loop = true;
-        kodamaAudio.volume = 0.8;
+      // 1. Audio direkt durch Klick-Geste abspielen
+      if (audioEl) {
+        audioEl.muted = false;
+        audioEl.volume = 1.0;
+        audioEl.play().catch(function(err) {
+          console.log("Audio Play Fehler:", err);
+        });
       }
 
-      kodamaAudio.play().then(() => {
-        console.log("Sound gestartet");
-      }).catch(err => {
-        console.log("Audio Fehler:", err);
-      });
+      // 2. WebAudio Context in A-Frame entsperren
+      if (scene.audioListener && scene.audioListener.context) {
+        if (scene.audioListener.context.state === 'suspended') {
+          scene.audioListener.context.resume();
+        }
+      }
 
-      // 2. Overlay ausblenden
+      // 3. Overlay ausblenden
       document.querySelector('#overlay').style.display = 'none';
 
-      // 3. AR-Modus starten (öffnet die Kamera)
-      if (scene.enterVR) {
+      // 4. AR-Modus explizit starten (enterAR für Kamera!)
+      if (scene.enterAR) {
+        scene.enterAR();
+      } else if (scene.enterVR) {
         scene.enterVR();
       }
     });
