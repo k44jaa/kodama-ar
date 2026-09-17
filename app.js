@@ -1,40 +1,13 @@
 // ============================================================
 // KODAMA AR - CREATIVE SPACE LEUPHANA
-// Individuelle & weit gestaffelte Verteilung im Raum
+// Autonome, unabhängige KI-Wesen in WebXR (FSM-Architektur)
 // ============================================================
 
-const PLANT_LOCATIONS = [
-  {
-    name: "Kodama 1 (Nah & Rechts unten)",
-    x: 1.40,     // 1,4m nach rechts
-    y: 0.95,     // Eher bodennah / tief
-    z: -1.60,    // Nah bei dir (1,6m Abstand)
-    scale: 0.12  // Etwas kleiner
-  },
-  {
-    name: "Kodama 2 (Mitte-Links & Augenhöhe)",
-    x: -1.80,    // Leicht nach links
-    y: 1.55,     // Auf Augenhöhe
-    z: -3.20,    // Mittlere Distanz (3,2m Abstand)
-    scale: 0.15  // Standardgröße
-  },
-  {
-    name: "Kodama 3 (Weit hinten Links)",
-    x: -3.80,    // Weit links an der Wand/Pflanze
-    y: 1.10,     // Mittlere Höhe
-    z: -5.20,    // Weit hinten im Raum (5,2m Abstand)
-    scale: 0.17  // Etwas größer, damit er auf Distanz gut sichtbar ist
-  },
-  {
-    name: "Kodama 4 (Rechts oben schwebend)",
-    x: 2.20,     // Rechter Raumbereich
-    y: 2.35,     // Hoch schwebend
-    z: -3.80,    // Nach hinten versetzt (3,8m Abstand)
-    scale: 0.14  // Fein skaliert
-  }
-];
-
 AFRAME.registerComponent('magic-forest', {
+  schema: {
+    count: { type: 'int', default: 4 } // Anzahl der eigenständigen Kodamas
+  },
+
   init: function () {
     let sceneEl = this.el.sceneEl;
 
@@ -42,58 +15,174 @@ AFRAME.registerComponent('magic-forest', {
       if (this.spawned) return;
       this.spawned = true;
 
-      PLANT_LOCATIONS.forEach((loc, index) => {
+      let spawnedPositions = [];
+
+      for (let i = 0; i < this.data.count; i++) {
         let kodama = document.createElement('a-entity');
-
         kodama.setAttribute('gltf-model', '#kodama-model');
-        kodama.setAttribute('position', { x: loc.x, y: loc.y, z: loc.z });
 
-        // Jeder Kodama blickt in eine andere, zufällige Richtung
-        let randomYRotation = Math.floor(Math.random() * 360);
-        kodama.setAttribute('rotation', { x: 0, y: randomYRotation, z: 0 });
+        // 1. Automatische Raumverteilung mit Sicherheitsabstand
+        let pos = this.generateSpreadPosition(spawnedPositions);
+        spawnedPositions.push(pos);
+        kodama.setAttribute('position', pos);
 
-        // Individuelle Größe setzen
-        kodama.setAttribute('scale', `${loc.scale} ${loc.scale} ${loc.scale}`);
+        // 2. Zufällige Blickrichtung beim Start (0-360°)
+        kodama.setAttribute('rotation', { x: 0, y: Math.random() * 360, z: 0 });
 
-        // Leicht variierende Animationsgeschwindigkeit für individuelle Bewegung
-        let animSpeed = (0.7 + Math.random() * 0.5).toFixed(2);
+        // 3. Individuelle Größen
+        let scale = (0.12 + Math.random() * 0.05).toFixed(3);
+        kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
+
+        // 4. Asynchrone Blender-Animation
+        let animSpeed = (0.6 + Math.random() * 0.6).toFixed(2);
         kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${animSpeed}`);
 
-        // Einzigartige Schwebefrequenz pro Kodama
-        kodama.setAttribute('kodama-logic', {
-          speed: 0.6 + Math.random() * 0.8,
-          height: 0.05 + Math.random() * 0.05,
-          offset: index * 1.5 // Versetzte Schwebeprobe (nicht synchron!)
+        // 5. Autonomer Verhaltens-Agent
+        kodama.setAttribute('kodama-agent', {
+          id: i,
+          baseY: pos.y
         });
 
         sceneEl.appendChild(kodama);
-      });
+      }
     });
+  },
+
+  // Generiert verteilte Positionen ohne Überlappung
+  generateSpreadPosition: function (existingPositions) {
+    let valid = false;
+    let newPos = { x: 0, y: 1.2, z: -2 };
+    let attempts = 0;
+
+    while (!valid && attempts < 50) {
+      attempts++;
+      // Verteilung im Bereich: Links/Rechts (-3.5m bis +3.5m), Tiefe (-1.5m bis -5.5m), Höhe (0.8m bis 2.1m)
+      let x = (Math.random() * 7 - 3.5);
+      let z = -(1.5 + Math.random() * 4.0);
+      let y = 0.8 + Math.random() * 1.3;
+
+      newPos = { x: parseFloat(x.toFixed(2)), y: parseFloat(y.toFixed(2)), z: parseFloat(z.toFixed(2)) };
+
+      // Prüfen, ob der Abstand zu anderen Kodamas mindestens 1.5 Meter beträgt
+      valid = existingPositions.every(p => {
+        let dx = p.x - newPos.x;
+        let dz = p.z - newPos.z;
+        return Math.sqrt(dx * dx + dz * dz) > 1.5;
+      });
+    }
+
+    return newPos;
   }
 });
 
-// Eigenständige, asynchrone Schwebelogik
-AFRAME.registerComponent('kodama-logic', {
+// ============================================================
+// AUTONOMES VERHALTEN (FINITE STATE MACHINE)
+// Jeder Kodama entscheidet selbstständig über seine Aktionen
+// ============================================================
+AFRAME.registerComponent('kodama-agent', {
   schema: {
-    speed: { type: 'number', default: 1 },
-    height: { type: 'number', default: 0.08 },
-    offset: { type: 'number', default: 0 }
+    id: { type: 'int' },
+    baseY: { type: 'number', default: 1.2 }
   },
 
   init: function () {
-    setTimeout(() => {
-      this.startY = this.el.object3D.position.y;
-    }, 150);
+    this.cameraEl = this.el.sceneEl.camera.el;
+    
+    // Individuelle Schwebeparameter
+    this.floatSpeed = 0.8 + Math.random() * 1.2;
+    this.floatHeight = 0.05 + Math.random() * 0.08;
+    this.timeOffset = Math.random() * 100;
 
-    // Individuelle Startphase, damit sie nicht synchron auf und ab wippen
-    this.time = this.data.offset + Math.random() * 50;
+    // Zustände: 'HOVER' (Schweben), 'WANDER' (Wandern), 'APPROACH_USER' (User besuchen), 'ROTATE' (Drehen)
+    this.state = 'HOVER';
+    this.targetPos = new THREE.Vector3();
+
+    // Startet die autonome Entscheidungs-Schleife
+    this.scheduleNextDecision();
+  },
+
+  scheduleNextDecision: function () {
+    // Alle 5 bis 12 Sekunden trifft das Wesen spontan eine neue Entscheidung
+    let interval = 5000 + Math.random() * 7000;
+
+    setTimeout(() => {
+      this.makeDecision();
+      this.scheduleNextDecision();
+    }, interval);
+  },
+
+  makeDecision: function () {
+    let rand = Math.random();
+
+    if (rand < 0.40) {
+      // 40% Chance: Ruhiges Schweben am Ort
+      this.state = 'HOVER';
+    } else if (rand < 0.68) {
+      // 28% Chance: Zu einem neuen Ort im Raum wandern
+      this.state = 'WANDER';
+      this.targetPos.set(
+        (Math.random() * 6 - 3),
+        this.data.baseY + (Math.random() * 0.6 - 0.3),
+        -(1.8 + Math.random() * 3.5)
+      );
+    } else if (rand < 0.88) {
+      // 20% Chance: Neugierig auf den User / die Kamera zufliegen!
+      this.state = 'APPROACH_USER';
+    } else {
+      // 12% Chance: Sich spontan umsehen / im Kreis drehen
+      this.state = 'ROTATE';
+      this.targetYRotation = this.el.object3D.rotation.y + (Math.PI * (Math.random() > 0.5 ? 1 : -1));
+    }
   },
 
   tick: function (time, timeDelta) {
-    if (this.startY !== undefined) {
-      this.time += timeDelta / 1000;
-      let newY = this.startY + Math.sin(this.time * this.data.speed) * this.data.height;
-      this.el.object3D.position.y = newY;
+    let deltaSec = timeDelta / 1000;
+    this.timeOffset += deltaSec;
+
+    let pos = this.el.object3D.position;
+
+    // Organische Grundschwebung (Sinus-Welle)
+    let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
+
+    // Zustandsabhängige Logik
+    if (this.state === 'HOVER') {
+      pos.y = this.data.baseY + hoverY;
+
+    } else if (this.state === 'WANDER') {
+      // Sanfte Bewegung zur Zielposition
+      pos.lerp(this.targetPos, deltaSec * 0.4);
+      pos.y += hoverY * 0.2;
+
+      if (pos.distanceTo(this.targetPos) < 0.4) {
+        this.data.baseY = pos.y;
+        this.state = 'HOVER';
+      }
+
+    } else if (this.state === 'APPROACH_USER') {
+      // Position der Handy-Kamera ermitteln
+      let camPos = new THREE.Vector3();
+      this.cameraEl.object3D.getWorldPosition(camPos);
+
+      let dir = new THREE.Vector3().subVectors(camPos, pos).normalize();
+
+      // Blickkontakt zum User halten
+      this.el.object3D.lookAt(camPos.x, pos.y, camPos.z);
+
+      // Sanft annähern, aber vor dem User (1.3m Abstand) anhalten
+      if (pos.distanceTo(camPos) > 1.3) {
+        pos.x += dir.x * deltaSec * 0.3;
+        pos.z += dir.z * deltaSec * 0.3;
+      }
+      pos.y = this.data.baseY + hoverY;
+
+    } else if (this.state === 'ROTATE') {
+      // Drehung ausführen
+      this.el.object3D.rotation.y = THREE.MathUtils.lerp(
+        this.el.object3D.rotation.y,
+        this.targetYRotation,
+        deltaSec * 1.5
+      );
+      pos.y = this.data.baseY + hoverY;
     }
   }
 });
