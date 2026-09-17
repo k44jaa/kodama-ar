@@ -1,12 +1,37 @@
 // ============================================================
 // KODAMA AR - CREATIVE SPACE LEUPHANA
-// Exakt berechnete Raumkoordinaten relativ zum NFC-Chip
+// Individuelle & weit gestaffelte Verteilung im Raum
 // ============================================================
 
 const PLANT_LOCATIONS = [
-  { name: "Fixpunkt 1 (Links Vorne)", x: -3.62, y: 1.05, z: -4.62 },
-  { name: "Fixpunkt 2 (Links Hinten)", x: -3.48, y: 0.86, z: -1.42 },
-  { name: "Fixpunkt 3 (Rechts Mitte)", x: 0.69, y: 1.95, z: -2.64 }
+  {
+    name: "Kodama 1 (Nah & Rechts unten)",
+    x: 1.40,     // 1,4m nach rechts
+    y: 0.95,     // Eher bodennah / tief
+    z: -1.60,    // Nah bei dir (1,6m Abstand)
+    scale: 0.12  // Etwas kleiner
+  },
+  {
+    name: "Kodama 2 (Mitte-Links & Augenhöhe)",
+    x: -1.80,    // Leicht nach links
+    y: 1.55,     // Auf Augenhöhe
+    z: -3.20,    // Mittlere Distanz (3,2m Abstand)
+    scale: 0.15  // Standardgröße
+  },
+  {
+    name: "Kodama 3 (Weit hinten Links)",
+    x: -3.80,    // Weit links an der Wand/Pflanze
+    y: 1.10,     // Mittlere Höhe
+    z: -5.20,    // Weit hinten im Raum (5,2m Abstand)
+    scale: 0.17  // Etwas größer, damit er auf Distanz gut sichtbar ist
+  },
+  {
+    name: "Kodama 4 (Rechts oben schwebend)",
+    x: 2.20,     // Rechter Raumbereich
+    y: 2.35,     // Hoch schwebend
+    z: -3.80,    // Nach hinten versetzt (3,8m Abstand)
+    scale: 0.14  // Fein skaliert
+  }
 ];
 
 AFRAME.registerComponent('magic-forest', {
@@ -14,36 +39,31 @@ AFRAME.registerComponent('magic-forest', {
     let sceneEl = this.el.sceneEl;
 
     sceneEl.addEventListener('enter-vr', () => {
-      let audioEl = document.querySelector('#kodama-sound');
-      if (audioEl && audioEl.paused) {
-        audioEl.play().catch(() => {});
-      }
-
       if (this.spawned) return;
       this.spawned = true;
 
-      PLANT_LOCATIONS.forEach((loc) => {
+      PLANT_LOCATIONS.forEach((loc, index) => {
         let kodama = document.createElement('a-entity');
 
         kodama.setAttribute('gltf-model', '#kodama-model');
         kodama.setAttribute('position', { x: loc.x, y: loc.y, z: loc.z });
 
-        // Zufällige Blickrichtung (0° bis 360°)
-        let initialYRotation = Math.floor(Math.random() * 360);
-        kodama.setAttribute('rotation', { x: 0, y: initialYRotation, z: 0 });
+        // Jeder Kodama blickt in eine andere, zufällige Richtung
+        let randomYRotation = Math.floor(Math.random() * 360);
+        kodama.setAttribute('rotation', { x: 0, y: randomYRotation, z: 0 });
 
-        // Individuelle Skalierung (Größe)
-        let randomScale = (0.13 + Math.random() * 0.04).toFixed(3);
-        kodama.setAttribute('scale', `${randomScale} ${randomScale} ${randomScale}`);
+        // Individuelle Größe setzen
+        kodama.setAttribute('scale', `${loc.scale} ${loc.scale} ${loc.scale}`);
 
-        // Animation aus Blender
-        let randomAnimSpeed = (0.8 + Math.random() * 0.4).toFixed(2);
-        kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${randomAnimSpeed}`);
+        // Leicht variierende Animationsgeschwindigkeit für individuelle Bewegung
+        let animSpeed = (0.7 + Math.random() * 0.5).toFixed(2);
+        kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${animSpeed}`);
 
-        // Ortsfeste Schwebelogik
+        // Einzigartige Schwebefrequenz pro Kodama
         kodama.setAttribute('kodama-logic', {
-          speed: 0.8 + Math.random() * 0.6,
-          height: 0.06 + Math.random() * 0.05
+          speed: 0.6 + Math.random() * 0.8,
+          height: 0.05 + Math.random() * 0.05,
+          offset: index * 1.5 // Versetzte Schwebeprobe (nicht synchron!)
         });
 
         sceneEl.appendChild(kodama);
@@ -52,10 +72,12 @@ AFRAME.registerComponent('magic-forest', {
   }
 });
 
+// Eigenständige, asynchrone Schwebelogik
 AFRAME.registerComponent('kodama-logic', {
   schema: {
     speed: { type: 'number', default: 1 },
-    height: { type: 'number', default: 0.08 }
+    height: { type: 'number', default: 0.08 },
+    offset: { type: 'number', default: 0 }
   },
 
   init: function () {
@@ -63,7 +85,8 @@ AFRAME.registerComponent('kodama-logic', {
       this.startY = this.el.object3D.position.y;
     }, 150);
 
-    this.time = Math.random() * 100;
+    // Individuelle Startphase, damit sie nicht synchron auf und ab wippen
+    this.time = this.data.offset + Math.random() * 50;
   },
 
   tick: function (time, timeDelta) {
