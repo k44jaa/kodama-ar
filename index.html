@@ -58,7 +58,7 @@
 </head>
 <body>
 
-  <!-- Start-Overlay für Freigabe von Kamera & Ton -->
+  <!-- Start-Overlay -->
   <div id="overlay">
     <h1 style="margin-bottom: 8px;">Kodama AR</h1>
     <p style="opacity: 0.9; max-width: 320px; line-height: 1.4;">
@@ -68,7 +68,7 @@
     <button id="start-btn">✨ AR & Sound starten</button>
   </div>
 
-  <!-- A-Frame AR-Szene mit Kamera-Stream -->
+  <!-- A-Frame AR-Szene -->
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
     vr-mode-ui="enabled: false"
@@ -83,16 +83,14 @@
   </a-scene>
 
   <script>
-    // 2D-Audio (Organischer Sound mit wechselnder Lautstärke & zufälligem Timing)
-    const kodamaSound = new Audio('./assets/sound.mp3');
+    // 2D-Audio mit der funktionierenden Datei (Sound.mp3)
+    const kodamaSound = new Audio('./assets/Sound.mp3');
 
     function playOrganicKodamaSound() {
       kodamaSound.currentTime = 0;
-      // Zufällige Lautstärke (30% bis 90%), damit es lebendig wirkt
       kodamaSound.volume = 0.3 + Math.random() * 0.6;
       kodamaSound.play().catch(err => console.log("Audio Info:", err));
 
-      // Nächstes Klappern/Geräusch nach zufällig 4 bis 10 Sekunden
       let nextInterval = 4000 + Math.random() * 6000;
       setTimeout(playOrganicKodamaSound, nextInterval);
     }
@@ -106,8 +104,10 @@
       // 2. Overlay ausblenden
       document.querySelector('#overlay').style.display = 'none';
 
-      // 3. AR-Kameramodus in A-Frame auslösen
-      if (scene.enterVR) {
+      // 3. AR-Kameramodus explizit anfordern (enterAR)
+      if (scene.enterAR) {
+        scene.enterAR();
+      } else if (scene.enterVR) {
         scene.enterVR();
       }
     });
