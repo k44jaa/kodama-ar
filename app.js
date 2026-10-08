@@ -1,11 +1,14 @@
 // ============================================================
 // KODAMA AR - CREATIVE SPACE LEUPHANA
-// Autonome, unabhängige KI-Wesen in WebXR (FSM-Architektur)
+// Autonome Wesen, Zonen-Territorien & Ätherischer Geister-Look
 // ============================================================
+
+// Stellt sicher, dass immer nur maximal 1 Geist zur gleichen Zeit zum User fliegt
+let isAnyKodamaVisitingUser = false;
 
 AFRAME.registerComponent('magic-forest', {
   schema: {
-    count: { type: 'int', default: 4 } // Anzahl der eigenständigen Kodamas
+    count: { type: 'int', default: 4 } // 4 eigenständige Geister
   },
 
   init: function () {
@@ -15,95 +18,105 @@ AFRAME.registerComponent('magic-forest', {
       if (this.spawned) return;
       this.spawned = true;
 
-      let spawnedPositions = [];
+      // 4 weit gestreute Raum-Territorien (Links, Weit Hinten, Rechts, Oben/Mitte)
+      const ZONES = [
+        { name: "Links",       minX: -4.5, maxX: -2.8, minZ: -4.5, maxZ: -2.5, minY: 1.0, maxY: 1.6 },
+        { name: "Weit Hinten", minX: -1.8, maxX:  1.8, minZ: -7.5, maxZ: -5.5, minY: 1.2, maxY: 1.9 },
+        { name: "Rechts",      minX:  2.8, maxX:  4.5, minZ: -4.5, maxZ: -2.5, minY: 0.9, maxY: 1.5 },
+        { name: "Hoch/Mitte",  minX: -1.5, maxX:  2.0, minZ: -3.5, maxZ: -2.0, minY: 1.8, maxY: 2.4 }
+      ];
 
       for (let i = 0; i < this.data.count; i++) {
+        let zone = ZONES[i % ZONES.length];
         let kodama = document.createElement('a-entity');
+
         kodama.setAttribute('gltf-model', '#kodama-model');
 
-        // 1. Automatische Raumverteilung mit Sicherheitsabstand
-        let pos = this.generateSpreadPosition(spawnedPositions);
-        spawnedPositions.push(pos);
-        kodama.setAttribute('position', pos);
+        // Startposition innerhalb der zugewiesenen Zone
+        let startPos = {
+          x: zone.minX + Math.random() * (zone.maxX - zone.minX),
+          y: zone.minY + Math.random() * (zone.maxY - zone.minY),
+          z: zone.minZ + Math.random() * (zone.maxZ - zone.minZ)
+        };
+        kodama.setAttribute('position', startPos);
 
-        // 2. Zufällige Blickrichtung beim Start (0-360°)
+        // Zufällige Start-Blickrichtung (0-360°)
         kodama.setAttribute('rotation', { x: 0, y: Math.random() * 360, z: 0 });
 
-        // 3. Individuelle Größen
-        let scale = (0.12 + Math.random() * 0.05).toFixed(3);
+        // Individuelle Skalierung
+        let scale = (0.13 + Math.random() * 0.04).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // 4. Asynchrone Blender-Animation
-        let animSpeed = (0.6 + Math.random() * 0.6).toFixed(2);
-        kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${animSpeed}`);
+        // --- ÄTHERISCHER GEISTER-EFFEKT (Löst Ballon-Look & Überlappungsnähte) ---
+        kodama.addEventListener('model-loaded', () => {
+          let mesh = kodama.getObject3D('mesh');
+          if (mesh) {
+            mesh.traverse((node) => {
+              if (node.isMesh && node.material) {
+                // Additives Blending lässt den Geist wie reines Licht leuchten
+                node.material.transparent = true;
+                node.material.blending = THREE.AdditiveBlending;
+                node.material.opacity = 0.75;
+                node.material.depthWrite = false; // Verhindert Kanten-Flackern & Nahtlinien
+                
+                // Sanftes, übernatürliches Eigenleuchten (blasses Mintgrün / Weiß)
+                node.material.emissive = new THREE.Color(0x99ffdd);
+                node.material.emissiveIntensity = 0.45;
+                node.material.needsUpdate = true;
+              }
+            });
+          }
+        });
 
-        // 5. Autonomer Verhaltens-Agent
+        // Autonome Agenten-Steuerung
         kodama.setAttribute('kodama-agent', {
           id: i,
-          baseY: pos.y
+          zoneMinX: zone.minX,
+          zoneMaxX: zone.maxX,
+          zoneMinZ: zone.minZ,
+          zoneMaxZ: zone.maxZ,
+          baseY: startPos.y
         });
 
         sceneEl.appendChild(kodama);
       }
     });
-  },
-
-  // Generiert verteilte Positionen ohne Überlappung
-  generateSpreadPosition: function (existingPositions) {
-    let valid = false;
-    let newPos = { x: 0, y: 1.2, z: -2 };
-    let attempts = 0;
-
-    while (!valid && attempts < 50) {
-      attempts++;
-      // Verteilung im Bereich: Links/Rechts (-3.5m bis +3.5m), Tiefe (-1.5m bis -5.5m), Höhe (0.8m bis 2.1m)
-      let x = (Math.random() * 7 - 3.5);
-      let z = -(1.5 + Math.random() * 4.0);
-      let y = 0.8 + Math.random() * 1.3;
-
-      newPos = { x: parseFloat(x.toFixed(2)), y: parseFloat(y.toFixed(2)), z: parseFloat(z.toFixed(2)) };
-
-      // Prüfen, ob der Abstand zu anderen Kodamas mindestens 1.5 Meter beträgt
-      valid = existingPositions.every(p => {
-        let dx = p.x - newPos.x;
-        let dz = p.z - newPos.z;
-        return Math.sqrt(dx * dx + dz * dz) > 1.5;
-      });
-    }
-
-    return newPos;
   }
 });
 
 // ============================================================
-// AUTONOMES VERHALTEN (FINITE STATE MACHINE)
-// Jeder Kodama entscheidet selbstständig über seine Aktionen
+// FINITE STATE MACHINE (AUTONOMES VERHALTEN PRO KODAMA)
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
     id: { type: 'int' },
+    zoneMinX: { type: 'number' },
+    zoneMaxX: { type: 'number' },
+    zoneMinZ: { type: 'number' },
+    zoneMaxZ: { type: 'number' },
     baseY: { type: 'number', default: 1.2 }
   },
 
   init: function () {
     this.cameraEl = this.el.sceneEl.camera.el;
-    
-    // Individuelle Schwebeparameter
-    this.floatSpeed = 0.8 + Math.random() * 1.2;
-    this.floatHeight = 0.05 + Math.random() * 0.08;
+
+    // Individuelle Rhythmen für Schwebung und Kopfwackeln
+    this.floatSpeed = 0.8 + Math.random() * 0.8;
+    this.floatHeight = 0.05 + Math.random() * 0.06;
+    this.wobbleSpeed = 1.2 + Math.random() * 1.0;
     this.timeOffset = Math.random() * 100;
 
-    // Zustände: 'HOVER' (Schweben), 'WANDER' (Wandern), 'APPROACH_USER' (User besuchen), 'ROTATE' (Drehen)
+    // Zustände: 'HOVER', 'WANDER', 'APPROACH_USER', 'RETURN_TO_ZONE', 'ROTATE'
     this.state = 'HOVER';
     this.targetPos = new THREE.Vector3();
+    this.targetYRotation = this.el.object3D.rotation.y;
 
-    // Startet die autonome Entscheidungs-Schleife
     this.scheduleNextDecision();
   },
 
   scheduleNextDecision: function () {
-    // Alle 5 bis 12 Sekunden trifft das Wesen spontan eine neue Entscheidung
-    let interval = 5000 + Math.random() * 7000;
+    // Alle 6 bis 14 Sekunden trifft das Wesen spontan eine neue Entscheidung
+    let interval = 6000 + Math.random() * 8000;
 
     setTimeout(() => {
       this.makeDecision();
@@ -114,25 +127,41 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
-    if (rand < 0.40) {
-      // 40% Chance: Ruhiges Schweben am Ort
-      this.state = 'HOVER';
-    } else if (rand < 0.68) {
-      // 28% Chance: Zu einem neuen Ort im Raum wandern
-      this.state = 'WANDER';
-      this.targetPos.set(
-        (Math.random() * 6 - 3),
-        this.data.baseY + (Math.random() * 0.6 - 0.3),
-        -(1.8 + Math.random() * 3.5)
-      );
-    } else if (rand < 0.88) {
-      // 20% Chance: Neugierig auf den User / die Kamera zufliegen!
+    // 20% Chance: Neugierig zum User fliegen (nur wenn kein anderer gerade dort ist)
+    if (rand < 0.20 && !isAnyKodamaVisitingUser) {
       this.state = 'APPROACH_USER';
+      isAnyKodamaVisitingUser = true;
+
+      // Nach 7 Sekunden Neugier kehrt das Wesen automatisch in sein Territorium zurück
+      setTimeout(() => {
+        if (this.state === 'APPROACH_USER') {
+          this.pickZoneTarget();
+          this.state = 'RETURN_TO_ZONE';
+        }
+      }, 7000);
+
+    } else if (rand < 0.65) {
+      // 45% Chance: Im eigenen Territorium umherwandern
+      this.state = 'WANDER';
+      this.pickZoneTarget();
+
+    } else if (rand < 0.85) {
+      // 20% Chance: Ruhig am Platz schweben
+      this.state = 'HOVER';
+
     } else {
-      // 12% Chance: Sich spontan umsehen / im Kreis drehen
+      // 15% Chance: Neugierig im Kreis drehen
       this.state = 'ROTATE';
-      this.targetYRotation = this.el.object3D.rotation.y + (Math.PI * (Math.random() > 0.5 ? 1 : -1));
+      this.targetYRotation = this.el.object3D.rotation.y + (Math.PI * (Math.random() > 0.5 ? 0.8 : -0.8));
     }
+  },
+
+  pickZoneTarget: function () {
+    this.targetPos.set(
+      this.data.zoneMinX + Math.random() * (this.data.zoneMaxX - this.data.zoneMinX),
+      this.data.baseY + (Math.random() * 0.5 - 0.25),
+      this.data.zoneMinZ + Math.random() * (this.data.zoneMaxZ - this.data.zoneMinZ)
+    );
   },
 
   tick: function (time, timeDelta) {
@@ -140,51 +169,55 @@ AFRAME.registerComponent('kodama-agent', {
     this.timeOffset += deltaSec;
 
     let pos = this.el.object3D.position;
+    let rot = this.el.object3D.rotation;
 
-    // Lässt das Geisterleuchten sanft und unregelmäßig an- und abschwellen
-    node.material.emissiveIntensity = 0.3 + Math.sin(this.timeOffset * 2.0) * 0.2;
-
-    // Organische Grundschwebung (Sinus-Welle)
+    // 1. Organisches Auf-und-Ab-Schweben
     let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
 
-    // Zustandsabhängige Logik
+    // 2. Niedliches, geisterhaftes Neigen / Kopfwackeln
+    rot.z = Math.sin(this.timeOffset * this.wobbleSpeed) * 0.12;
+
+    // 3. Ausführung der autonomen Zustände
     if (this.state === 'HOVER') {
       pos.y = this.data.baseY + hoverY;
 
     } else if (this.state === 'WANDER') {
-      // Sanfte Bewegung zur Zielposition
-      pos.lerp(this.targetPos, deltaSec * 0.4);
-      pos.y += hoverY * 0.2;
+      pos.lerp(this.targetPos, deltaSec * 0.35);
+      pos.y += hoverY * 0.1;
 
-      if (pos.distanceTo(this.targetPos) < 0.4) {
+      if (pos.distanceTo(this.targetPos) < 0.5) {
         this.data.baseY = pos.y;
         this.state = 'HOVER';
       }
 
     } else if (this.state === 'APPROACH_USER') {
-      // Position der Handy-Kamera ermitteln
       let camPos = new THREE.Vector3();
       this.cameraEl.object3D.getWorldPosition(camPos);
 
       let dir = new THREE.Vector3().subVectors(camPos, pos).normalize();
 
-      // Blickkontakt zum User halten
+      // Blickkontakt zur Smartphone-Kamera halten
       this.el.object3D.lookAt(camPos.x, pos.y, camPos.z);
 
-      // Sanft annähern, aber vor dem User (1.3m Abstand) anhalten
-      if (pos.distanceTo(camPos) > 1.3) {
-        pos.x += dir.x * deltaSec * 0.3;
-        pos.z += dir.z * deltaSec * 0.3;
+      // Sanft heranfliegen, hält bei 1,8m Abstand respektvoll an
+      if (pos.distanceTo(camPos) > 1.8) {
+        pos.x += dir.x * deltaSec * 0.4;
+        pos.z += dir.z * deltaSec * 0.4;
       }
       pos.y = this.data.baseY + hoverY;
 
+    } else if (this.state === 'RETURN_TO_ZONE') {
+      pos.lerp(this.targetPos, deltaSec * 0.4);
+      pos.y += hoverY * 0.1;
+
+      if (pos.distanceTo(this.targetPos) < 0.6) {
+        isAnyKodamaVisitingUser = false;
+        this.data.baseY = pos.y;
+        this.state = 'HOVER';
+      }
+
     } else if (this.state === 'ROTATE') {
-      // Drehung ausführen
-      this.el.object3D.rotation.y = THREE.MathUtils.lerp(
-        this.el.object3D.rotation.y,
-        this.targetYRotation,
-        deltaSec * 1.5
-      );
+      rot.y = THREE.MathUtils.lerp(rot.y, this.targetYRotation, deltaSec * 1.5);
       pos.y = this.data.baseY + hoverY;
     }
   }
