@@ -141,6 +141,9 @@ AFRAME.registerComponent('kodama-agent', {
 
     let pos = this.el.object3D.position;
 
+    // Lässt das Geisterleuchten sanft und unregelmäßig an- und abschwellen
+    node.material.emissiveIntensity = 0.3 + Math.sin(this.timeOffset * 2.0) * 0.2;
+
     // Organische Grundschwebung (Sinus-Welle)
     let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
 
