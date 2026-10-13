@@ -1,6 +1,6 @@
 // ============================================================
 // KODAMA AR - CREATIVE SPACE LEUPHANA
-// 10 Geister mit butterweichen Drehungen (Quaternion Slerp)
+// 10 Geister mit weichen Drehungen & angenehmer Besucher-Distanz
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
@@ -80,7 +80,7 @@ AFRAME.registerComponent('magic-forest', {
 });
 
 // ============================================================
-// AGENTEN-LOGIK MIT FLIESSENDEN DREHUNGEN
+// AGENTEN-LOGIK MIT FLIESSENDEN DREHUNGEN & ANGENEHMER DISTANZ
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -100,7 +100,6 @@ AFRAME.registerComponent('kodama-agent', {
     this.wobbleSpeed = 1.3 + Math.random() * 1.1;
     this.timeOffset = Math.random() * 100;
 
-    // Hilfsobjekte für weiche Drehungen
     this.targetQuaternion = new THREE.Quaternion();
     this.dummy = new THREE.Object3D();
 
@@ -123,6 +122,7 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
+    // 15% Chance: Besuch beim User
     if (rand < 0.15 && !isAnyKodamaVisitingUser) {
       this.state = 'APPROACH_USER';
       isAnyKodamaVisitingUser = true;
@@ -140,7 +140,6 @@ AFRAME.registerComponent('kodama-agent', {
 
     } else if (rand < 0.90) {
       this.state = 'ROTATE';
-      // Zufälliges sanftes Umsehen
       let randomAngle = (Math.random() - 0.5) * Math.PI * 1.2;
       this.dummy.position.copy(this.el.object3D.position);
       this.dummy.rotation.copy(this.el.object3D.rotation);
@@ -160,12 +159,9 @@ AFRAME.registerComponent('kodama-agent', {
     );
   },
 
-  // Dreht das Objekt butterweich in Richtung eines Zielpunkts
   smoothLookAt: function (targetVector, deltaSec, speed = 2.5) {
     this.dummy.position.copy(this.el.object3D.position);
     this.dummy.lookAt(targetVector.x, this.el.object3D.position.y, targetVector.z);
-    
-    // Weiche sphärische Interpolation (Slerp)
     this.el.object3D.quaternion.slerp(this.dummy.quaternion, deltaSec * speed);
   },
 
@@ -180,7 +176,6 @@ AFRAME.registerComponent('kodama-agent', {
       pos.y = this.data.baseY + hoverY;
 
     } else if (this.state === 'WANDER') {
-      // 1. Sanft in Flugrichtung wenden (kein Rucken mehr!)
       let flyTarget = new THREE.Vector3().subVectors(pos, this.targetPos).add(pos);
       this.smoothLookAt(flyTarget, deltaSec, 2.8);
 
@@ -196,12 +191,12 @@ AFRAME.registerComponent('kodama-agent', {
       let camPos = new THREE.Vector3();
       this.cameraEl.object3D.getWorldPosition(camPos);
 
-      // 2. Sanft und neugierig mit dem Gesicht zum Smartphone drehen
       let lookTarget = new THREE.Vector3().subVectors(pos, camPos).add(pos);
       this.smoothLookAt(lookTarget, deltaSec, 3.2);
 
+      // Angenehme Distanz: Stoppt bei ca. 75 cm (Armlänge vor dem Handy)
       let dist = pos.distanceTo(camPos);
-      if (dist > 0.35) {
+      if (dist > 0.75) {
         let dir = new THREE.Vector3().subVectors(camPos, pos).normalize();
         pos.x += dir.x * deltaSec * 1.0;
         pos.z += dir.z * deltaSec * 1.0;
