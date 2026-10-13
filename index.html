@@ -5,28 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Creative Space - Kodama AR</title>
 
-  <!-- A-Frame & Extras Bibliotheken -->
+  <!-- Google Fonts: Yuji Boku (Calligraphy) & Quicksand (Clean Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600&family=Yuji+Boku&display=swap" rel="stylesheet">
+
+  <!-- A-Frame & Extras Libraries -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
-  <!-- Skript für autonome AR-Logik -->
+  <!-- Autonomous AR Logic -->
   <script src="./app.js"></script>
 
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      font-family: system-ui, -apple-system, sans-serif;
+      font-family: 'Quicksand', system-ui, -apple-system, sans-serif;
     }
 
-    /* Start-Overlay (Löst Browser-Autoplay & WebXR-Kameraberechtigungen) */
+    /* Start Overlay Container */
     #overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(10, 20, 15, 0.9);
       z-index: 99999;
       display: flex;
       flex-direction: column;
@@ -36,20 +40,75 @@
       text-align: center;
       padding: 24px;
       box-sizing: border-box;
+      overflow: hidden;
     }
 
+    /* Looping Background Video */
+    #bg-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    /* Soft Dark Vignette for Contrast */
+    #video-tint {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(10, 25, 18, 0.55) 0%, rgba(5, 15, 10, 0.82) 100%);
+      z-index: 1;
+    }
+
+    /* Content Area */
+    #overlay-content {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 360px;
+    }
+
+    /* Title using Yuji Boku */
+    #overlay-content h1 {
+      font-family: 'Yuji Boku', serif;
+      font-size: 34px;
+      font-weight: 400;
+      margin: 0 0 14px 0;
+      letter-spacing: 1.5px;
+      text-shadow: 0 3px 12px rgba(0, 0, 0, 0.75);
+    }
+
+    /* Explanatory text */
+    #overlay-content p {
+      font-family: 'Quicksand', sans-serif;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.5;
+      margin: 0 0 24px 0;
+      opacity: 0.92;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+    }
+
+    /* Start Button with Yuji Boku */
     #start-btn {
       background: #00674b;
       color: white;
       border: none;
-      padding: 18px 36px;
-      font-size: 20px;
-      font-weight: bold;
+      padding: 16px 36px;
+      font-family: 'Yuji Boku', serif;
+      font-size: 22px;
+      letter-spacing: 1px;
       border-radius: 50px;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4);
-      margin-top: 24px;
-      transition: transform 0.1s ease;
+      box-shadow: 0 6px 24px rgba(0, 103, 75, 0.5);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
 
     #start-btn:active {
@@ -59,34 +118,41 @@
 </head>
 <body>
 
-  <!-- Start-Bildschirm -->
+  <!-- Custom Video Overlay -->
   <div id="overlay">
-    <h1 style="margin-bottom: 8px;">Creative Space Kodamas</h1>
-    <p style="opacity: 0.9; max-width: 320px; line-height: 1.5;">
-      When you start, please look straight ahead into the room.<br>
-      <small style="opacity: 0.7;">(Turn off the mute switch on your smartphone)</small>
-    </p>
-    <button id="start-btn">🌳🪵Discover🪾🌲</button>
+    <!-- Background Loop Video -->
+    <video id="bg-video" autoplay loop muted playsinline src="./assets/intro.mp4"></video>
+
+    <!-- Tint Vignette -->
+    <div id="video-tint"></div>
+
+    <!-- UI Elements -->
+    <div id="overlay-content">
+      <h1>Creative Space Kodamas</h1>
+      <p>
+        When you start, please look straight ahead into the room.<br>
+        <small style="opacity: 0.75; font-size: 13px;">(Turn off the mute switch on your smartphone)</small>
+      </p>
+      <button id="start-btn">🌳🪵Discover🪾🌲</button>
+    </div>
   </div>
 
-  <!-- A-Frame AR-Szene -->
+  <!-- A-Frame AR Scene -->
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
     vr-mode-ui="enabled: false"
+    loading-screen="enabled: false"
     magic-forest>
 
     <a-assets>
-      <!-- Verknüpfung mit deinem aktuellen 3D-Modell kodama_06.glb -->
       <a-asset-item id="kodama-model" src="./assets/kodama_06.glb"></a-asset-item>
     </a-assets>
 
-    <!-- Kamera auf Augenhöhe -->
     <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
 
   </a-scene>
 
   <script>
-    // Audio initialisieren (sanft und leise auf 20%)
     const kodamaSound = new Audio('./assets/sound.mp3');
     kodamaSound.loop = true;
     kodamaSound.volume = 0.20;
@@ -94,17 +160,16 @@
     document.querySelector('#start-btn').addEventListener('click', function() {
       let scene = document.querySelector('a-scene');
 
-      // 1. Audio direkt synchron beim Touch-Event starten
       kodamaSound.play().then(() => {
-        console.log("Audio erfolgreich gestartet.");
+        console.log("Audio playback initialized.");
       }).catch(err => {
-        console.log("Audio-Status:", err);
+        console.log("Audio playback notice:", err);
       });
 
-      // 2. Overlay ausblenden
+      const video = document.querySelector('#bg-video');
+      if (video) video.pause();
       document.querySelector('#overlay').style.display = 'none';
 
-      // 3. AR-Kamera anfordern
       if (scene.enterAR) {
         scene.enterAR();
       } else if (scene.enterVR) {
