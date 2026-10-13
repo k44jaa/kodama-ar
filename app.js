@@ -1,13 +1,13 @@
 // ============================================================
 // KODAMA AR - CREATIVE SPACE LEUPHANA
-// 10 autonome Waldgeister, weit gestreut im Raum
+// 10 Ghostly, Translucent Forest Spirits with Intimate Visitor AI
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
 
 AFRAME.registerComponent('magic-forest', {
   schema: {
-    count: { type: 'int', default: 10 } // Jetzt 10 eigenständige Kodamas!
+    count: { type: 'int', default: 10 } // Spawns 10 independent spirits
   },
 
   init: function () {
@@ -17,16 +17,16 @@ AFRAME.registerComponent('magic-forest', {
       if (this.spawned) return;
       this.spawned = true;
 
-      // 8 weit gestreute Raum-Zonen in Tiefe, Höhe und Breite
+      // 8 widely distributed territorial zones across width, depth, and height
       const ZONES = [
-        { name: "Weit Links Hinten", minX: -5.0, maxX: -3.0, minZ: -6.5, maxZ: -4.5, minY: 1.0, maxY: 1.6 },
-        { name: "Links Vorne",       minX: -4.2, maxX: -2.2, minZ: -3.8, maxZ: -2.0, minY: 0.8, maxY: 1.4 },
-        { name: "Zentrum Hinten",    minX: -1.5, maxX:  1.5, minZ: -8.0, maxZ: -6.0, minY: 1.2, maxY: 1.9 },
-        { name: "Zentrum Mitte",     minX: -1.8, maxX:  1.8, minZ: -4.8, maxZ: -3.2, minY: 0.9, maxY: 1.5 },
-        { name: "Weit Rechts Hinten",minX:  3.0, maxX:  5.0, minZ: -6.5, maxZ: -4.5, minY: 1.1, maxY: 1.7 },
-        { name: "Rechts Vorne",      minX:  2.2, maxX:  4.2, minZ: -3.8, maxZ: -2.0, minY: 0.8, maxY: 1.4 },
-        { name: "Hoch Oben Links",   minX: -3.0, maxX: -0.5, minZ: -5.0, maxZ: -2.5, minY: 1.8, maxY: 2.5 },
-        { name: "Hoch Oben Rechts",  minX:  0.5, maxX:  3.0, minZ: -5.0, maxZ: -2.5, minY: 1.8, maxY: 2.5 }
+        { name: "Far Left Back",   minX: -5.0, maxX: -3.0, minZ: -6.5, maxZ: -4.5, minY: 1.0, maxY: 1.6 },
+        { name: "Left Front",      minX: -4.2, maxX: -2.2, minZ: -3.8, maxZ: -2.0, minY: 0.8, maxY: 1.4 },
+        { name: "Center Back",     minX: -1.5, maxX:  1.5, minZ: -8.0, maxZ: -6.0, minY: 1.2, maxY: 1.9 },
+        { name: "Center Mid",      minX: -1.8, maxX:  1.8, minZ: -4.8, maxZ: -3.2, minY: 0.9, maxY: 1.5 },
+        { name: "Far Right Back",  minX:  3.0, maxX:  5.0, minZ: -6.5, maxZ: -4.5, minY: 1.1, maxY: 1.7 },
+        { name: "Right Front",     minX:  2.2, maxX:  4.2, minZ: -3.8, maxZ: -2.0, minY: 0.8, maxY: 1.4 },
+        { name: "High Left",       minX: -3.0, maxX: -0.5, minZ: -5.0, maxZ: -2.5, minY: 1.8, maxY: 2.5 },
+        { name: "High Right",      minX:  0.5, maxX:  3.0, minZ: -5.0, maxZ: -2.5, minY: 1.8, maxY: 2.5 }
       ];
 
       for (let i = 0; i < this.data.count; i++) {
@@ -43,23 +43,29 @@ AFRAME.registerComponent('magic-forest', {
         kodama.setAttribute('position', startPos);
         kodama.setAttribute('rotation', { x: 0, y: Math.random() * 360, z: 0 });
 
-        // Leicht variierende Größen für ein natürliches Völkchen
+        // Organic scale variation
         let scale = (0.11 + Math.random() * 0.05).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Material: Originalfarben beibehalten, matt & sanft durchscheinend
+        // --- TRANSLUCENT GHOST MATERIAL ---
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
               if (node.isMesh && node.material) {
+                // High translucency to look truly spectral
                 node.material.transparent = true;
-                node.material.depthWrite = false;
-                node.material.opacity = 0.82;
+                node.material.depthWrite = false; // Eliminates interior neck/joint occlusion seams
+                node.material.opacity = 0.48;     // See-through sweet spot
+
+                // Matte surface to eliminate shiny plastic/balloon highlights
                 node.material.roughness = 0.95;
                 node.material.metalness = 0.0;
-                node.material.emissive = new THREE.Color(0x182c1e);
-                node.material.emissiveIntensity = 0.25;
+
+                // Subtle organic spirit luminescence
+                node.material.emissive = new THREE.Color(0x1a3322);
+                node.material.emissiveIntensity = 0.35;
+
                 node.material.needsUpdate = true;
               }
             });
@@ -82,7 +88,7 @@ AFRAME.registerComponent('magic-forest', {
 });
 
 // ============================================================
-// INDIVIDUELLE AGENTEN-STEUERUNG
+// AGENT BEHAVIOR & FACE-TO-FACE CAMERA TRACKING
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -122,17 +128,18 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
-    // Bei 10 Wesen senken wir die Chance leicht auf 15%, damit nicht ständig Unruhe am Display herrscht
+    // 15% probability: Curiosity trip directly to the phone's lens
     if (rand < 0.15 && !isAnyKodamaVisitingUser) {
       this.state = 'APPROACH_USER';
       isAnyKodamaVisitingUser = true;
 
+      // Remains close to the user for ~8 seconds before returning home
       setTimeout(() => {
         if (this.state === 'APPROACH_USER') {
           this.pickZoneTarget();
           this.state = 'RETURN_TO_ZONE';
         }
-      }, 7500);
+      }, 8000);
 
     } else if (rand < 0.75) {
       this.state = 'WANDER';
@@ -185,13 +192,15 @@ AFRAME.registerComponent('kodama-agent', {
       let camPos = new THREE.Vector3();
       this.cameraEl.object3D.getWorldPosition(camPos);
 
-      // Schaut frontal in die Handylinse
+      // DIRECT FRONTAL EYE CONTACT:
+      // Inverts target vector so front face (+Z) looks straight at the smartphone camera
       let lookTarget = new THREE.Vector3().subVectors(pos, camPos).add(pos);
       this.el.object3D.lookAt(lookTarget.x, camPos.y, lookTarget.z);
 
+      // Subtle curious head tilt during eye contact
       rot.z = Math.sin(this.timeOffset * this.wobbleSpeed) * 0.15;
 
-      // Stoppt ganz nah (ca. 35 cm) vor der Kamera
+      // Glides directly up to the user (stops ~35 cm from the lens)
       let dist = pos.distanceTo(camPos);
       if (dist > 0.35) {
         let dir = new THREE.Vector3().subVectors(camPos, pos).normalize();
@@ -199,6 +208,7 @@ AFRAME.registerComponent('kodama-agent', {
         pos.z += dir.z * deltaSec * 1.1;
       }
 
+      // Smoothly aligns with camera height
       pos.y = THREE.MathUtils.lerp(pos.y, camPos.y - 0.05, deltaSec * 1.5) + hoverY * 0.15;
 
     } else if (this.state === 'RETURN_TO_ZONE') {
