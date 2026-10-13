@@ -1,6 +1,6 @@
 // ============================================================
 // KODAMA AR - CREATIVE SPACE LEUPHANA
-// Satte grüne Waldgeister mit extremer Nah-Interaktion
+// Natürliche Ursprungsfarbe, matter Geister-Look & Nahkontakt
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
@@ -17,7 +17,7 @@ AFRAME.registerComponent('magic-forest', {
       if (this.spawned) return;
       this.spawned = true;
 
-      // Weit gestreute Zonen im Raum
+      // Großzügig verteilte Territorien im Raum
       const ZONES = [
         { name: "Links",       minX: -4.8, maxX: -2.4, minZ: -5.0, maxZ: -2.0, minY: 0.9, maxY: 1.7 },
         { name: "Weit Hinten", minX: -2.2, maxX:  2.2, minZ: -7.5, maxZ: -5.0, minY: 1.1, maxY: 2.0 },
@@ -42,25 +42,24 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.13 + Math.random() * 0.04).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // --- SATTES, MAGISCHES WALDGRÜN OHNE WEISS-AUSWASCHUNG ---
+        // --- DEINE URSPRUNGSFARBE & MATTER GEISTER-LOOK ---
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
               if (node.isMesh && node.material) {
-                // Eventuelle weiße Texturen entfernen, damit das Grün zu 100% greift
-                node.material.map = null;
-
-                // Echte Transparenz statt überbelichtetem AdditiveBlending
+                // Behält deine originale Farbgebung & Augen aus Blender bei
                 node.material.transparent = true;
-                node.material.blending = THREE.NormalBlending;
-                node.material.opacity = 0.72;
                 node.material.depthWrite = false; // Verhindert Nahtstellen am Hals
+                node.material.opacity = 0.82;      // Sanft geisterhaft durchscheinend
 
-                // Tiefes, leuchtendes Wald-Smaragdgrün
-                node.material.color = new THREE.Color(0x00d044);
-                node.material.emissive = new THREE.Color(0x008828);
-                node.material.emissiveIntensity = 0.55;
+                // ANTI-BALLON-EFFEKT: Matte Oberfläche ohne glänzende Plastik-Highlights
+                node.material.roughness = 0.95;
+                node.material.metalness = 0.0;
+
+                // Sehr dezenter, organischer Waldgeist-Schimmer im Hintergrund
+                node.material.emissive = new THREE.Color(0x182c1e);
+                node.material.emissiveIntensity = 0.25;
 
                 node.material.needsUpdate = true;
               }
@@ -84,7 +83,7 @@ AFRAME.registerComponent('magic-forest', {
 });
 
 // ============================================================
-// DYNAMISCHES VERHALTEN MIT NAHKONTAKT VOR DER LINSE
+// DYNAMISCHES VERHALTEN & GESICHTSKONTAKT ZUM USER
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -99,9 +98,9 @@ AFRAME.registerComponent('kodama-agent', {
   init: function () {
     this.cameraEl = this.el.sceneEl.camera.el;
 
-    this.floatSpeed = 1.0 + Math.random() * 1.0;
+    this.floatSpeed = 1.0 + Math.random() * 0.8;
     this.floatHeight = 0.05 + Math.random() * 0.05;
-    this.wobbleSpeed = 1.4 + Math.random() * 1.2;
+    this.wobbleSpeed = 1.4 + Math.random() * 1.0;
     this.timeOffset = Math.random() * 100;
 
     this.state = 'WANDER';
@@ -113,7 +112,7 @@ AFRAME.registerComponent('kodama-agent', {
   },
 
   scheduleNextDecision: function () {
-    let interval = 2500 + Math.random() * 3000;
+    let interval = 3000 + Math.random() * 3500;
 
     setTimeout(() => {
       this.makeDecision();
@@ -124,24 +123,26 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
-    // 25% Chance: Neugierig direkt vor die Linse fliegen
+    // 25% Chance: Neugierig direkt zur Kameralinse gleiten
     if (rand < 0.25 && !isAnyKodamaVisitingUser) {
       this.state = 'APPROACH_USER';
       isAnyKodamaVisitingUser = true;
 
-      // Bleibt 6.5 Sekunden direkt vor der Kamera neugierig stehen
+      // Bleibt 8 Sekunden beim User, damit genug Zeit für Besuch & Blickkontakt bleibt
       setTimeout(() => {
         if (this.state === 'APPROACH_USER') {
           this.pickZoneTarget();
           this.state = 'RETURN_TO_ZONE';
         }
-      }, 6500);
+      }, 8000);
 
     } else if (rand < 0.80) {
+      // Wandern im eigenen Territorium
       this.state = 'WANDER';
       this.pickZoneTarget();
 
     } else if (rand < 0.90) {
+      // Neugierig umdrehen
       this.state = 'ROTATE';
       this.targetYRotation = this.el.object3D.rotation.y + (Math.PI * (Math.random() > 0.5 ? 0.9 : -0.9));
 
@@ -165,18 +166,20 @@ AFRAME.registerComponent('kodama-agent', {
     let pos = this.el.object3D.position;
     let rot = this.el.object3D.rotation;
 
-    // Auf- und Abschweben
     let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
-
-    // Sanftes Neigen / Wackeln
-    rot.z = Math.sin(this.timeOffset * this.wobbleSpeed) * 0.14;
 
     if (this.state === 'HOVER') {
       pos.y = this.data.baseY + hoverY;
+      rot.z = Math.sin(this.timeOffset * this.wobbleSpeed) * 0.12;
 
     } else if (this.state === 'WANDER') {
+      // Schaut in Flugrichtung
+      let flyTarget = new THREE.Vector3().subVectors(pos, this.targetPos).add(pos);
+      this.el.object3D.lookAt(flyTarget.x, pos.y, flyTarget.z);
+
       pos.lerp(this.targetPos, deltaSec * 0.7);
       pos.y += hoverY * 0.2;
+      rot.z = Math.sin(this.timeOffset * this.wobbleSpeed) * 0.14;
 
       if (pos.distanceTo(this.targetPos) < 0.4) {
         this.data.baseY = pos.y;
@@ -187,22 +190,30 @@ AFRAME.registerComponent('kodama-agent', {
       let camPos = new THREE.Vector3();
       this.cameraEl.object3D.getWorldPosition(camPos);
 
-      let dir = new THREE.Vector3().subVectors(camPos, pos).normalize();
+      // RICHTET DAS GESICHT FRONTAL ZUM USER AUS:
+      // Wir spiegeln den Zielvektor, damit die Frontseite (+Z) direkt in deine Handylinse blickt
+      let lookTarget = new THREE.Vector3().subVectors(pos, camPos).add(pos);
+      this.el.object3D.lookAt(lookTarget.x, camPos.y, lookTarget.z);
 
-      // Schaut direkt in die Kamera
-      this.el.object3D.lookAt(camPos.x, pos.y, camPos.z);
+      // Neugieriges Neigen des Kopfes während des Blickkontakts
+      rot.z = Math.sin(this.timeOffset * this.wobbleSpeed) * 0.15;
 
-      // Fliegt ganz nah heran: Stoppt erst bei ca. 28 cm direkt vor der Linse!
-      if (pos.distanceTo(camPos) > 0.28) {
-        pos.x += dir.x * deltaSec * 0.8;
-        pos.z += dir.z * deltaSec * 0.8;
+      // Gleitet zügig heran und stoppt ganz nah (ca. 35 cm vor der Handylinse)
+      let dist = pos.distanceTo(camPos);
+      if (dist > 0.35) {
+        let dir = new THREE.Vector3().subVectors(camPos, pos).normalize();
+        pos.x += dir.x * deltaSec * 1.1;
+        pos.z += dir.z * deltaSec * 1.1;
       }
 
-      // Richtet sich exakt auf die Augen-/Linsenhöhe der Kamera aus
-      pos.y = THREE.MathUtils.lerp(pos.y, camPos.y - 0.05, deltaSec * 1.5) + hoverY * 0.2;
+      // Richtet sich exakt auf Linsenhöhe aus
+      pos.y = THREE.MathUtils.lerp(pos.y, camPos.y - 0.05, deltaSec * 1.5) + hoverY * 0.15;
 
     } else if (this.state === 'RETURN_TO_ZONE') {
-      pos.lerp(this.targetPos, deltaSec * 0.65);
+      let flyTarget = new THREE.Vector3().subVectors(pos, this.targetPos).add(pos);
+      this.el.object3D.lookAt(flyTarget.x, pos.y, flyTarget.z);
+
+      pos.lerp(this.targetPos, deltaSec * 0.7);
       pos.y += hoverY * 0.2;
 
       if (pos.distanceTo(this.targetPos) < 0.6) {
