@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Creative Space - Kodama AR</title>
 
-  <!-- Google Fonts: Yuji Boku (Calligraphy) & Quicksand (Clean Body) -->
+  <!-- Google Fonts: Yuji Boku & Quicksand -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600&family=Yuji+Boku&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
-  <!-- Autonomous AR Logic -->
+  <!-- Autonomous AR Agent Logic -->
   <script src="./app.js"></script>
 
   <style>
@@ -54,7 +54,7 @@
       z-index: 0;
     }
 
-    /* Soft Dark Vignette for Contrast */
+    /* Dark Vignette for Text Contrast */
     #video-tint {
       position: absolute;
       top: 0;
@@ -65,7 +65,7 @@
       z-index: 1;
     }
 
-    /* Content Area */
+    /* Interface Content */
     #overlay-content {
       position: relative;
       z-index: 2;
@@ -75,7 +75,6 @@
       max-width: 360px;
     }
 
-    /* Title using Yuji Boku */
     #overlay-content h1 {
       font-family: 'Yuji Boku', serif;
       font-size: 34px;
@@ -85,7 +84,6 @@
       text-shadow: 0 3px 12px rgba(0, 0, 0, 0.75);
     }
 
-    /* Explanatory text */
     #overlay-content p {
       font-family: 'Quicksand', sans-serif;
       font-size: 16px;
@@ -96,7 +94,6 @@
       text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
     }
 
-    /* Start Button with Yuji Boku */
     #start-btn {
       background: #00674b;
       color: white;
@@ -118,34 +115,36 @@
 </head>
 <body>
 
-  <!-- Custom Video Overlay -->
+  <!-- Custom Video Loading Overlay -->
   <div id="overlay">
-    <!-- Background Loop Video -->
     <video id="bg-video" autoplay loop muted playsinline src="./assets/intro.mp4"></video>
-
-    <!-- Tint Vignette -->
     <div id="video-tint"></div>
 
-    <!-- UI Elements -->
     <div id="overlay-content">
       <h1>Creative Space Kodamas</h1>
       <p>
-        When you start, please look straight ahead into the room.<br>
-        <small style="opacity: 0.75; font-size: 13px;">(Turn off the mute switch on your smartphone)</small>
+        Beim Starten bitte geradeaus in den Raum blicken.<br>
+        <small style="opacity: 0.75; font-size: 13px;">(Stummschalter am Smartphone ausschalten)</small>
       </p>
       <button id="start-btn">🌳🪵Discover🪾🌲</button>
     </div>
   </div>
 
-  <!-- A-Frame AR Scene -->
+  <!-- A-Frame AR Scene mit genau 6 Geistern -->
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
     vr-mode-ui="enabled: false"
     loading-screen="enabled: false"
-    magic-forest>
+    magic-forest="count: 6">
 
     <a-assets>
-      <a-asset-item id="kodama-model" src="./assets/kodama_08.glb"></a-asset-item>
+      <!-- Pre-loading aller 6 einzigartigen Kodama-Modelle -->
+      <a-asset-item id="kodama-1" src="./assets/new_kodama_01.glb"></a-asset-item>
+      <a-asset-item id="kodama-2" src="./assets/new_kodama_02.glb"></a-asset-item>
+      <a-asset-item id="kodama-3" src="./assets/new_kodama_03.glb"></a-asset-item>
+      <a-asset-item id="kodama-4" src="./assets/new_kodama_04.glb"></a-asset-item>
+      <a-asset-item id="kodama-5" src="./assets/new_kodama_05.glb"></a-asset-item>
+      <a-asset-item id="kodama-6" src="./assets/new_kodama_06.glb"></a-asset-item>
     </a-assets>
 
     <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
@@ -161,9 +160,9 @@
       let scene = document.querySelector('a-scene');
 
       kodamaSound.play().then(() => {
-        console.log("Audio playback initialized.");
+        console.log("Audio gestartet.");
       }).catch(err => {
-        console.log("Audio playback notice:", err);
+        console.log("Audio Hinweis:", err);
       });
 
       const video = document.querySelector('#bg-video');
