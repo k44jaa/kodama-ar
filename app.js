@@ -1,8 +1,7 @@
 // ============================================================
-// KODAMA AR - CREATIVE SPACE LEUPHANA (v12)
-// 6 Autonome Geister: Entferntere Zonen (kein Aufdringen),
-// direkter Blick ZUM USER (180°-Blickkorrektur), ortsfeste Sitzer (3, 4 & 5)
-// & langsame Interaktion zwischen den Geistern
+// KODAMA AR - CREATIVE SPACE LEUPHANA (v13)
+// 6 Autonome Geister: Weit im Raum verteilt, schwebende Sitzer,
+// geschmeidige Bewegung ohne Ruckeln & Kollisionsschutz
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
@@ -43,25 +42,25 @@ AFRAME.registerComponent('magic-forest', {
       this.spawned = true;
       allKodamaEntities = [];
 
-      // ZONEN MIT REICHLICH ABSTAND (Tiefe Z von -3.5m bis -7.5m)
+      // ZONEN DEUTLICH WEITER IM RAUM VERTEILT (Tiefe Z von -4.0m bis -9.0m, Breite X von -6.0m bis +6.0m)
       const PROFILES = [
-        // Kodama 1: Fliegend (Weit Links Hinten)
-        { modelId: '#kodama-1', isSitting: false, minX: -4.5, maxX: -2.5, minZ: -5.5, maxZ: -4.0, minY: 1.10, maxY: 1.50, speed: 0.25 },
+        // Kodama 1: Fliegend (Weit Links)
+        { modelId: '#kodama-1', isSitting: false, minX: -6.0, maxX: -3.2, minZ: -6.5, maxZ: -4.5, minY: 1.20, maxY: 1.70, speed: 0.35 },
         
-        // Kodama 2: Fliegend (Weit Rechts Hinten)
-        { modelId: '#kodama-2', isSitting: false, minX:  2.0, maxX:  4.0, minZ: -5.5, maxZ: -4.0, minY: 1.00, maxY: 1.40, speed: 0.30 },
+        // Kodama 2: Fliegend (Weit Rechts)
+        { modelId: '#kodama-2', isSitting: false, minX:  3.2, maxX:  6.0, minZ: -6.5, maxZ: -4.5, minY: 1.10, maxY: 1.60, speed: 0.35 },
         
-        // Kodama 3: SITZEND (Aufsitzer Links im Raum auf 3.8m Abstand)
-        { modelId: '#kodama-3', isSitting: true,  minX: -2.8, maxX: -1.8, minZ: -4.2, maxZ: -3.5, minY: 0.45, maxY: 0.45, speed: 0.0 },
+        // Kodama 3: SITZEND (Links auf 4.2m Tiefe - schwebt am Ort)
+        { modelId: '#kodama-3', isSitting: true,  minX: -3.5, maxX: -2.0, minZ: -5.0, maxZ: -3.8, minY: 0.50, maxY: 0.50, speed: 0.0 },
         
-        // Kodama 4: SITZEND (Aufsitzer Mitte im Raum auf 4.8m Abstand)
-        { modelId: '#kodama-4', isSitting: true,  minX: -0.8, maxX:  0.8, minZ: -5.2, maxZ: -4.5, minY: 0.25, maxY: 0.25, speed: 0.0 },
+        // Kodama 4: SITZEND (Zentrum Tief auf 5.8m Tiefe - schwebt am Ort)
+        { modelId: '#kodama-4', isSitting: true,  minX: -1.0, maxX:  1.0, minZ: -6.5, maxZ: -5.0, minY: 0.35, maxY: 0.35, speed: 0.0 },
         
-        // Kodama 5: SITZEND (Aufsitzer Rechts im Raum auf 3.8m Abstand)
-        { modelId: '#kodama-5', isSitting: true,  minX:  1.8, maxX:  2.8, minZ: -4.2, maxZ: -3.5, minY: 0.55, maxY: 0.55, speed: 0.0 },
+        // Kodama 5: SITZEND (Rechts auf 4.2m Tiefe - schwebt am Ort)
+        { modelId: '#kodama-5', isSitting: true,  minX:  2.0, maxX:  3.5, minZ: -5.0, maxZ: -3.8, minY: 0.60, maxY: 0.60, speed: 0.0 },
         
-        // Kodama 6: Fliegend (Hoher Hüter tief im Raum unter der Decke)
-        { modelId: '#kodama-6', isSitting: false, minX: -2.0, maxX:  2.0, minZ: -7.5, maxZ: -6.0, minY: 1.90, maxY: 2.30, speed: 0.20 }
+        // Kodama 6: Fliegend (Hoher Hüter ganz tief im Raum unter der Decke)
+        { modelId: '#kodama-6', isSitting: false, minX: -3.0, maxX:  3.0, minZ: -9.0, maxZ: -7.0, minY: 2.10, maxY: 2.60, speed: 0.25 }
       ];
 
       for (let i = 0; i < Math.min(this.data.count, PROFILES.length); i++) {
@@ -85,7 +84,7 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Material & Texturverarbeitung (Weißer Körper + schwarze Gesichter)
+        // Material-Anpassung: Milchig-weiße Körper & dunkle Gesichtszüge
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
@@ -191,7 +190,7 @@ AFRAME.registerComponent('magic-forest', {
 });
 
 // ============================================================
-// AGENTEN-LOGIK: DIREKTE BLICKKORREKTUR ZUM USER & SANFTE DYNAMIK
+// AGENTEN-LOGIK: WEICHE FLIEGBEWEGUNG, SCHWEBENDE SITZER & BLICKKORREKTUR
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -209,9 +208,9 @@ AFRAME.registerComponent('kodama-agent', {
   init: function () {
     this.cameraEl = this.el.sceneEl.camera.el;
 
-    this.breathSpeed = 0.3 + Math.random() * 0.3;
-    this.floatSpeed = 0.4 + Math.random() * 0.4;
-    this.floatHeight = 0.02 + Math.random() * 0.02;
+    this.breathSpeed = 0.4 + Math.random() * 0.4;
+    this.floatSpeed = 0.5 + Math.random() * 0.5;
+    this.floatHeight = 0.03 + Math.random() * 0.025; // Deutliches, sanftes Auf-und-Ab-Schweben
     this.timeOffset = Math.random() * 100;
 
     this.targetQuaternion = new THREE.Quaternion();
@@ -225,7 +224,7 @@ AFRAME.registerComponent('kodama-agent', {
   },
 
   scheduleNextDecision: function () {
-    let interval = 5500 + Math.random() * 4500;
+    let interval = 5000 + Math.random() * 4500;
 
     setTimeout(() => {
       this.makeDecision();
@@ -236,21 +235,20 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
-    // 18% Chance für ein leises Klappern
     if (Math.random() < 0.18) {
       window.playKodamaSound(1.0, 1.0);
     }
 
     if (this.data.isSitting) {
-      // SITZENDE KODAMAS (3, 4, 5): BLEIBEN AN ORT UND STELLE SCHWEBEN/ATMEN
-      if (rand < 0.85) {
-        this.state = 'SIT_LOOK_USER'; // Blicken zu 85% direkt zum Besucher
+      // SITZENDE KODAMAS (3, 4, 5): BLEIBEN AN ORT UND STELLE UND SCHWEBEN SANFT
+      if (rand < 0.75) {
+        this.state = 'SIT_LOOK_USER'; // Schauen zu 75% direkt zum Besucher
         if (Math.random() < 0.20) {
           window.playKodamaSound(0.8, 1.1);
         }
       } else {
-        this.state = 'SIT_LOOK_AWAY';
-        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.3;
+        this.state = 'SIT_LOOK_AWAY'; // Schauen kurz verträumt etwas zur Seite
+        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.5;
         this.dummy.position.copy(this.el.object3D.position);
         this.dummy.rotation.copy(this.el.object3D.rotation);
         this.dummy.rotation.y += randomAngle;
@@ -258,12 +256,12 @@ AFRAME.registerComponent('kodama-agent', {
       }
     } else {
       // FLIEGENDE KODAMAS (1, 2, 6)
-      if (rand < 0.40) {
-        // 40% Chance: Bleiben am Ort schwebend verharren & schauen dich an
+      if (rand < 0.35) {
+        // 35% Chance: Am Ort verharren, sanft auf und ab schweben & beobachten
         this.state = 'HOVER_IN_PLACE';
 
       } else if (rand < 0.70) {
-        // 30% Chance: Langsamer Flug zu neuem Ziel in ihrer Zone
+        // 35% Chance: Seidenweicher Flug zu neuem Ziel in ihrer Zone
         this.state = 'WANDER_ZONE';
         this.pickZoneTarget();
 
@@ -272,14 +270,14 @@ AFRAME.registerComponent('kodama-agent', {
         let otherIndex = (this.data.id + 1 + Math.floor(Math.random() * (allKodamaEntities.length - 1))) % allKodamaEntities.length;
         let otherPos = allKodamaEntities[otherIndex].object3D.position;
         this.targetPos.set(
-          otherPos.x + (Math.random() - 0.5) * 1.8,
+          otherPos.x + (Math.random() - 0.5) * 2.2,
           otherPos.y + (Math.random() - 0.5) * 0.6,
-          otherPos.z + (Math.random() - 0.5) * 1.8
+          otherPos.z + (Math.random() - 0.5) * 2.2
         );
         this.state = 'VISIT_OTHER_KODAMA';
 
       } else if (this.data.id === 1 && !isAnyKodamaVisitingUser) {
-        // 12% Chance: Kommt sanft näher, hält aber bei min. 2.2 Meter Anstand an!
+        // 12% Chance: Besucht den User schüchtern, hält bei 2.5 Meter Sicherheitsabstand an!
         this.state = 'APPROACH_USER';
         isAnyKodamaVisitingUser = true;
 
@@ -303,7 +301,7 @@ AFRAME.registerComponent('kodama-agent', {
     );
   },
 
-  // GARANTIERT KORREKTE AUSRICHTUNG DES GESICHTS ZUR KAMERA (+ Math.PI)
+  // SAUBERE ROTATIONS-LOGIK: RICHTET DAS GESICHT ZUR KAMERA AUS
   smoothLookAtUser: function (deltaSec, speed = 1.5) {
     let camPos = new THREE.Vector3();
     this.cameraEl.object3D.getWorldPosition(camPos);
@@ -312,8 +310,8 @@ AFRAME.registerComponent('kodama-agent', {
     this.dummy.position.copy(pos);
     this.dummy.lookAt(camPos.x, pos.y, camPos.z);
     
-    // 180 Grad Drehung: Richtet die Vorderseite des 3D-Modells zur Kamera aus!
-    this.dummy.rotation.y += Math.PI;
+    // RotateY 180° korrigiert die Blickrichtung der Blender-Vorderseite zum User
+    this.dummy.rotateY(Math.PI);
     
     this.el.object3D.quaternion.slerp(this.dummy.quaternion, deltaSec * speed);
   },
@@ -324,14 +322,16 @@ AFRAME.registerComponent('kodama-agent', {
 
     let pos = this.el.object3D.position;
 
-    // --- SITZENDE KODAMAS (3, 4, 5): FEST VERANKERT, NUR ATMEN & SCHWEBEN ---
+    // --- SITZENDE KODAMAS (3, 4, 5): ORTSFEST X/Z, ABER SCHWEBEN AUF UND AB ---
     if (this.data.isSitting) {
       let breathCycle = Math.sin(this.timeOffset * this.breathSpeed * 1.2);
       let scaleOffset = breathCycle * 0.015;
       let currentScale = this.data.baseScale + scaleOffset;
       this.el.object3D.scale.set(currentScale, currentScale + (scaleOffset * 0.3), currentScale);
 
-      pos.y = this.data.baseY + (breathCycle * 0.003);
+      // Schweben auf und ab an ihrem festen Platz
+      let floatY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
+      pos.y = this.data.baseY + floatY;
 
       if (this.state === 'SIT_LOOK_USER') {
         this.smoothLookAtUser(deltaSec, 1.8);
@@ -339,24 +339,51 @@ AFRAME.registerComponent('kodama-agent', {
         this.el.object3D.quaternion.slerp(this.targetQuaternion, deltaSec * 0.8);
       }
 
-      return; // Keine Ortsveränderung!
+      return; // Keine X/Z Ortsveränderung
     }
 
-    // --- FLIEGENDE KODAMAS (1, 2, 6): LANGSAME, ENTSPANNTE BEWEGUNG ---
+    // --- FLIEGENDE KODAMAS (1, 2, 6): SEIDENWEICHE BEWEGUNG & ABSTANDSHALTER ---
     let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
 
+    // Anti-Kollisions-Schutz: Halten Abstand voneinander
+    allKodamaEntities.forEach(other => {
+      if (other !== this.el) {
+        let otherPos = other.object3D.position;
+        let dx = pos.x - otherPos.x;
+        let dz = pos.z - otherPos.z;
+        let dist = Math.sqrt(dx * dx + dz * dz);
+
+        if (dist < 1.6 && dist > 0.05) {
+          let push = (1.6 - dist) * deltaSec * 0.35;
+          pos.x += (dx / dist) * push;
+          pos.z += (dz / dist) * push;
+        }
+      }
+    });
+
     if (this.state === 'HOVER_IN_PLACE') {
-      // Am Ort verharren, sanft auf und ab schweben & den User anschauen
+      // Schwebend am Ort verharren & schauen dich an
       this.smoothLookAtUser(deltaSec, 1.4);
-      pos.y = this.data.baseY + hoverY;
+      pos.y = THREE.MathUtils.lerp(pos.y, this.data.baseY + hoverY, deltaSec * 1.5);
 
     } else if (this.state === 'WANDER_ZONE' || this.state === 'VISIT_OTHER_KODAMA') {
       this.smoothLookAtUser(deltaSec, 1.2);
 
-      pos.lerp(this.targetPos, deltaSec * 0.22 * this.data.moveSpeed);
-      pos.y += hoverY * 0.08;
+      // Flüssiges Gleiten in der Ebene (X/Z)
+      let dx = this.targetPos.x - pos.x;
+      let dz = this.targetPos.z - pos.z;
+      let distXZ = Math.sqrt(dx * dx + dz * dz);
 
-      if (pos.distanceTo(this.targetPos) < 0.60) {
+      if (distXZ > 0.1) {
+        let step = deltaSec * 0.45 * this.data.moveSpeed;
+        pos.x += (dx / distXZ) * Math.min(step, distXZ);
+        pos.z += (dz / distXZ) * Math.min(step, distXZ);
+      }
+
+      // Sanftes Anpassen der Flughöhe (Y)
+      pos.y = THREE.MathUtils.lerp(pos.y, this.targetPos.y + hoverY, deltaSec * 1.2);
+
+      if (distXZ < 0.40) {
         this.data.baseY = pos.y;
         this.state = 'HOVER_IN_PLACE';
       }
@@ -368,11 +395,11 @@ AFRAME.registerComponent('kodama-agent', {
       this.cameraEl.object3D.getWorldPosition(camPos);
 
       let dist = pos.distanceTo(camPos);
-      // Hält bei angenehmen 2.2 Metern Abstand an!
-      if (dist > 2.2) {
+      // Hält bei angenehmen 2.5 Metern Sicherheitsabstand an!
+      if (dist > 2.5) {
         let dir = new THREE.Vector3().subVectors(camPos, pos).normalize();
-        pos.x += dir.x * deltaSec * 0.35 * this.data.moveSpeed;
-        pos.z += dir.z * deltaSec * 0.35 * this.data.moveSpeed;
+        pos.x += dir.x * deltaSec * 0.40 * this.data.moveSpeed;
+        pos.z += dir.z * deltaSec * 0.40 * this.data.moveSpeed;
       }
 
       pos.y = THREE.MathUtils.lerp(pos.y, camPos.y - 0.1, deltaSec * 0.6) + hoverY * 0.08;
@@ -380,10 +407,19 @@ AFRAME.registerComponent('kodama-agent', {
     } else if (this.state === 'RETURN_TO_ZONE') {
       this.smoothLookAtUser(deltaSec, 1.2);
 
-      pos.lerp(this.targetPos, deltaSec * 0.22 * this.data.moveSpeed);
-      pos.y += hoverY * 0.08;
+      let dx = this.targetPos.x - pos.x;
+      let dz = this.targetPos.z - pos.z;
+      let distXZ = Math.sqrt(dx * dx + dz * dz);
 
-      if (pos.distanceTo(this.targetPos) < 0.70) {
+      if (distXZ > 0.1) {
+        let step = deltaSec * 0.45 * this.data.moveSpeed;
+        pos.x += (dx / distXZ) * Math.min(step, distXZ);
+        pos.z += (dz / distXZ) * Math.min(step, distXZ);
+      }
+
+      pos.y = THREE.MathUtils.lerp(pos.y, this.targetPos.y + hoverY, deltaSec * 1.2);
+
+      if (distXZ < 0.50) {
         isAnyKodamaVisitingUser = false;
         this.data.baseY = pos.y;
         this.state = 'HOVER_IN_PLACE';
