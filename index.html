@@ -14,8 +14,8 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
-  <!-- Autonomous AR Agent Logic mit Cache-Buster v16 -->
-  <script src="./app.js?v=16"></script>
+  <!-- Autonomous AR Agent Logic mit Cache-Buster v17 -->
+  <script src="./app.js?v=17"></script>
 
   <style>
     body {
@@ -120,13 +120,13 @@
       <h1>Creative Space Kodamas</h1>
       <p>
         Beim Starten bitte geradeaus in den Raum blicken.<br>
-        <small style="opacity: 0.75; font-size: 13px;">(Stummschalter am Smartphone ausschalten)</small>
+        <small style="opacity: 0.75; font-size: 13px;">(Tippe die Geister an & schalte den Ton ein)</small>
       </p>
       <button id="start-btn">🌳🪵Discover🪾🌲</button>
     </div>
   </div>
 
-  <!-- A-Frame AR Scene -->
+  <!-- A-Frame AR Scene mit Touch-Raycaster -->
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
     vr-mode-ui="enabled: false"
@@ -142,7 +142,8 @@
       <a-asset-item id="kodama-6" src="./assets/new_kodama_06.glb"></a-asset-item>
     </a-assets>
 
-    <a-camera position="0 1.6 0" look-controls="enabled: false"></a-camera>
+    <!-- Kamera mit Touch-Erkennung für Smartphones -->
+    <a-camera position="0 1.6 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable"></a-camera>
 
   </a-scene>
 
