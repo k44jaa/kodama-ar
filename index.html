@@ -1,27 +1,28 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Creative Space - Kodama AR</title>
+  <title>Creative Space - Kodama AR Experience</title>
 
   <!-- Google Fonts: Yuji Boku & Quicksand -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600&family=Yuji+Boku&display=swap" rel="stylesheet">
 
-  <!-- A-Frame & Extras Libraries -->
+  <!-- WebXR Framework Libraries -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
-  <!-- Autonomous AR Agent Logic mit Cache-Buster v22 -->
-  <script src="./app.js?v=22"></script>
+  <!-- Autonomous AR Agent Core Engine -->
+  <script src="./app.js?v=23"></script>
 
   <style>
     body {
       margin: 0;
       overflow: hidden;
       font-family: 'Quicksand', system-ui, -apple-system, sans-serif;
+      background-color: #000000;
     }
 
     #overlay {
@@ -35,7 +36,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      color: white;
+      color: #ffffff;
       text-align: center;
       padding: 24px;
       box-sizing: border-box;
@@ -92,7 +93,7 @@
 
     #start-btn {
       background: #00674b;
-      color: white;
+      color: #ffffff;
       border: none;
       padding: 16px 36px;
       font-family: 'Yuji Boku', serif;
@@ -111,7 +112,7 @@
 </head>
 <body>
 
-  <!-- Custom Video Loading Overlay -->
+  <!-- WebXR Entry & Audio Authorization Overlay -->
   <div id="overlay">
     <video id="bg-video" autoplay loop muted playsinline src="./assets/intro.mp4"></video>
     <div id="video-tint"></div>
@@ -119,14 +120,14 @@
     <div id="overlay-content">
       <h1>Creative Space Kodamas</h1>
       <p>
-        Beim Starten bitte geradeaus in den Raum blicken.<br>
-        <small style="opacity: 0.75; font-size: 13px;">(Tippe die Geister an & lausche den Echos)</small>
+        Look straight ahead into the physical space upon starting.<br>
+        <small style="opacity: 0.75; font-size: 13px;">(Tap entities to interact & ensure audio is unmuted)</small>
       </p>
       <button id="start-btn">🌳🪵Discover🪾🌲</button>
     </div>
   </div>
 
-  <!-- A-Frame AR Scene mit optimiertem Touch-Raycaster -->
+  <!-- A-Frame WebXR Scene Graph -->
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
     vr-mode-ui="enabled: false"
@@ -142,13 +143,14 @@
       <a-asset-item id="kodama-6" src="./assets/new_kodama_06.glb"></a-asset-item>
     </a-assets>
 
+    <!-- Camera Node & Touch Raycaster -->
     <a-camera id="main-camera" position="0 1.6 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable, [gltf-model]; recursive: true"></a-camera>
 
   </a-scene>
 
   <script>
     document.querySelector('#start-btn').addEventListener('click', function() {
-      let scene = document.querySelector('a-scene');
+      const scene = document.querySelector('a-scene');
 
       if (window.playKodamaSound) {
         window.playKodamaSound(0.05, 1.0);
