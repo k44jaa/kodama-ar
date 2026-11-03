@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
   <!-- Autonomous AR Agent Core Engine -->
-  <script src="./app.js?v=23"></script>
+  <script src="./app.js?v=24"></script>
 
   <style>
     body {
@@ -143,8 +143,8 @@
       <a-asset-item id="kodama-6" src="./assets/new_kodama_06.glb"></a-asset-item>
     </a-assets>
 
-    <!-- Camera Node & Touch Raycaster -->
-    <a-camera id="main-camera" position="0 1.6 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable, [gltf-model]; recursive: true"></a-camera>
+    <!-- Camera Node -->
+    <a-camera id="main-camera" position="0 1.6 0" look-controls="enabled: false"></a-camera>
 
   </a-scene>
 
