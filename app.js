@@ -72,21 +72,22 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Material-Anpassung: UNDURCHSICHTIG & TRADITIONELL MILCHIG-WEISS
+          // Ersetzt das Blender-Material garantiert durch ein neues, solides Material
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
-              if (node.isMesh && node.material) {
-                node.material.transparent = false; // Keinerlei Transparenz mehr!
-                node.material.depthWrite = true;
-                node.material.opacity = 1.0;
-                node.material.color = new THREE.Color(0xf2f7f2); // Milchiges Porzellan-Weiß
-                node.material.roughness = 0.85; // Matte, kalkige Oberfläche
-                node.material.metalness = 0.0;
-                node.material.emissive = new THREE.Color(0x142017); // Dezent magischer Waldschimmer
-                node.material.emissiveIntensity = 0.20;
-                node.material.needsUpdate = true;
+              if (node.isMesh) {
+                // Erzeugt ein komplett frisches, undurchsichtiges Material
+                node.material = new THREE.MeshStandardMaterial({
+                  color: 0xf2f7f2,        // Milchiges Porzellan-Weiß
+                  roughness: 0.85,        // Matte Oberfläche
+                  metalness: 0.0,
+                  transparent: false,     // Keinerlei Transparenz!
+                  depthWrite: true,       // Korrekte Tiefen-Verdeckung
+                  emissive: 0x142017,     // Sanfter Geister-Schimmer
+                  emissiveIntensity: 0.20
+                });
               }
             });
           }
