@@ -1,19 +1,15 @@
 // ============================================================
 // KODAMA AR - CREATIVE SPACE LEUPHANA
-// 6 Autonome Geister: Subtile, seltene Akustik ("Hörst du das auch?"),
-// traditionell milchig-weißes Material, beibehaltene Gesichter
-// & ortsfeste Sitzer (Kodamas 3, 4 & 5)
+// 6 Autonome Geister: Automatischer JS-Texturfilter (Grün -> Weiß),
+// Gesichter bleiben erhalten, dezent grünes Leuchten & leise Akustik
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
 
-// Geheimnisvolle, extrem subtile Klapper-Funktion
 window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
   try {
     let snd = new Audio('./assets/sound.mp3');
-    // Sanftes Flüsterniveau (ca. 1.5% bis 3.5% Lautstärke)
     snd.volume = Math.min(0.04, (0.015 + Math.random() * 0.02) * volFactor);
-    // Zufällige Tonhöhe/Geschwindigkeit (klingt nach unterschiedlichen Holz-Klicks)
     snd.playbackRate = (0.80 + Math.random() * 0.45) * pitchFactor;
     snd.play().catch(() => {});
   } catch (e) {}
@@ -34,22 +30,11 @@ AFRAME.registerComponent('magic-forest', {
       // 6 weit getrennte Zonen im Raum
       // Kodamas 1, 2, 6 = fliegend | Kodamas 3, 4, 5 = ortsfest sitzend
       const PROFILES = [
-        // Kodama 1: Fliegend (Weit Links Vorne, sehr ruhig)
         { modelId: '#kodama-1', isSitting: false, minX: -4.8, maxX: -2.8, minZ: -3.5, maxZ: -2.0, minY: 1.10, maxY: 1.50, speed: 0.45 },
-        
-        // Kodama 2: Fliegend (Mitte/Rechts, kommt sanft zu Besuch)
         { modelId: '#kodama-2', isSitting: false, minX:  1.0, maxX:  3.2, minZ: -3.8, maxZ: -2.2, minY: 1.00, maxY: 1.40, speed: 0.50 },
-        
-        // Kodama 3: SITZEND (Sockel/Tisch-Höhe Links - 0.45m)
         { modelId: '#kodama-3', isSitting: true,  minX: -2.5, maxX: -1.2, minZ: -2.8, maxZ: -1.8, minY: 0.45, maxY: 0.45, speed: 0.0 },
-        
-        // Kodama 4: SITZEND (Boden-Höhe Mitte - 0.25m)
         { modelId: '#kodama-4', isSitting: true,  minX: -0.8, maxX:  0.8, minZ: -4.2, maxZ: -3.2, minY: 0.25, maxY: 0.25, speed: 0.0 },
-        
-        // Kodama 5: SITZEND (Fensterbank/Tisch-Höhe Rechts - 0.55m)
         { modelId: '#kodama-5', isSitting: true,  minX:  2.2, maxX:  3.8, minZ: -3.2, maxZ: -2.2, minY: 0.55, maxY: 0.55, speed: 0.0 },
-        
-        // Kodama 6: Fliegend (Hoher Hüter tief im Raum unter der Decke)
         { modelId: '#kodama-6', isSitting: false, minX: -2.0, maxX:  2.0, minZ: -7.0, maxZ: -4.8, minY: 1.90, maxY: 2.30, speed: 0.35 }
       ];
 
@@ -74,29 +59,67 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Material: Strahlend weißer Körper mit sanft grünem Geisterleuchten
+        // Material & Textur-Filterung direkt in JS
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
-              if (node.isMesh && node.material) {
-                // 1. Transparenz & Überlappungen deaktivieren
-                node.material.transparent = false;
-                node.material.depthWrite = true;
-                node.material.opacity = 1.0;
-                
-                // 2. Körperfarbe auf strahlendes Reinweiß setzen
-                node.material.color = new THREE.Color(0xffffff);
-                
-                // 3. Dezent grünes Geister-Leuchten (Glow)
-                node.material.emissive = new THREE.Color(0x22aa55); // Magisches Waldgrün
-                node.material.emissiveIntensity = 0.18;            // Leichtes Leuchten
-                
-                node.material.roughness = 0.75;
-                node.material.metalness = 0.0;
-                
-                // Gemalte Gesichter beibehalten
-                node.material.needsUpdate = true;
+              if (node.isMesh) {
+                // 1. Versteckte Vertex-Colors aus Blender löschen
+                if (node.geometry && node.geometry.attributes.color) {
+                  node.geometry.deleteAttribute('color');
+                }
+
+                if (node.material) {
+                  node.material.vertexColors = false;
+
+                  // 2. Falls eine Textur geladen ist: Grüne Hintergrundpixel zu Weiß filtern!
+                  if (node.material.map && node.material.map.image) {
+                    try {
+                      let img = node.material.map.image;
+                      let canvas = document.createElement('canvas');
+                      canvas.width = img.width || 512;
+                      canvas.height = img.height || 512;
+                      let ctx = canvas.getContext('2d');
+                      ctx.drawImage(img, 0, 0);
+
+                      let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                      let data = imgData.data;
+
+                      // Alle nicht-dunklen Pixel in milchiges Weiß verwandeln
+                      for (let p = 0; p < data.length; p += 4) {
+                        let avg = (data[p] + data[p+1] + data[p+2]) / 3;
+                        if (avg > 50) { // Kein Auge/Mund -> Weiß einfärben
+                          data[p]   = 245; // R
+                          data[p+1] = 250; // G
+                          data[p+2] = 245; // B
+                        }
+                      }
+                      ctx.putImageData(imgData, 0, 0);
+
+                      let newTex = new THREE.CanvasTexture(canvas);
+                      newTex.flipY = node.material.map.flipY;
+                      node.material.map = newTex;
+                    } catch (e) {
+                      console.log("Textur-Filter Hinweis:", e);
+                    }
+                  }
+
+                  // 3. Körperfarbe auf Reinweiß setzen & Transparenz löschen
+                  node.material.transparent = false;
+                  node.material.depthWrite = true;
+                  node.material.opacity = 1.0;
+
+                  node.material.color = new THREE.Color(0xffffff);
+                  node.material.roughness = 0.80;
+                  node.material.metalness = 0.0;
+
+                  // Dezent grünlicher Geister-Schimmer im Schatten
+                  node.material.emissive = new THREE.Color(0x183320);
+                  node.material.emissiveIntensity = 0.22;
+
+                  node.material.needsUpdate = true;
+                }
               }
             });
           }
@@ -121,7 +144,7 @@ AFRAME.registerComponent('magic-forest', {
 });
 
 // ============================================================
-// AGENTEN-LOGIK: SPARSAME, GEHEIMNISVOLLE SOUND-IMPULSE
+// AGENTEN-LOGIK: ENTSCHLEUNIGT & STRIKT ORTSFESTE SITZER
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -155,7 +178,6 @@ AFRAME.registerComponent('kodama-agent', {
   },
 
   scheduleNextDecision: function () {
-    // Entspannte, lange Bedenkzeiten (7 bis 13 Sekunden)
     let interval = 7000 + Math.random() * 6000;
 
     setTimeout(() => {
@@ -167,16 +189,13 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
-    // Nur 6% Chance pro Entscheidung für ein extrem leises Klick-Geräusch
     if (Math.random() < 0.06) {
       window.playKodamaSound(0.6, 1.0);
     }
 
     if (this.data.isSitting) {
-      // SITZENDE KODAMAS (3, 4, 5): BLEIBEN AN ORT UND STELLE
       if (rand < 0.45) {
         this.state = 'SIT_LOOK_AT_USER';
-        // Gelegentlich ein ganz feiner Laut beim Blickkontakt
         if (Math.random() < 0.18) {
           window.playKodamaSound(0.5, 1.2);
         }
@@ -191,12 +210,10 @@ AFRAME.registerComponent('kodama-agent', {
         this.state = 'SIT_BREATHE';
       }
     } else {
-      // FLIEGENDE KODAMAS (1, 2, 6)
       if (this.data.id === 1 && rand < 0.20 && !isAnyKodamaVisitingUser) {
         this.state = 'APPROACH_USER';
         isAnyKodamaVisitingUser = true;
 
-        // Ein neugieriger, hellerer Flüster-Laut beim Aufbruch zum Besucher
         window.playKodamaSound(0.8, 1.25);
 
         setTimeout(() => {
@@ -241,7 +258,6 @@ AFRAME.registerComponent('kodama-agent', {
 
     let pos = this.el.object3D.position;
 
-    // --- SITZENDE KODAMAS (3, 4, 5): ORTSFEST & ATMEND ---
     if (this.data.isSitting) {
       let breathCycle = Math.sin(this.timeOffset * this.breathSpeed * 1.2);
       let scaleOffset = breathCycle * 0.015;
@@ -263,7 +279,6 @@ AFRAME.registerComponent('kodama-agent', {
       return;
     }
 
-    // --- FLIEGENDE KODAMAS (1, 2, 6): SANFTES GLEITEN ---
     let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
 
     if (this.state === 'WANDER') {
