@@ -74,22 +74,28 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Material-Anpassung: TRADITIONELL WEISS + BEIBEHALTENE GESICHTER
+        // Material: Strahlend weißer Körper mit sanft grünem Geisterleuchten
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
               if (node.isMesh && node.material) {
+                // 1. Transparenz & Überlappungen deaktivieren
                 node.material.transparent = false;
                 node.material.depthWrite = true;
                 node.material.opacity = 1.0;
                 
-                node.material.color = new THREE.Color(0xf0f5f0); // Milchiges Porzellan-Weiß
-                node.material.roughness = 0.85;                  // Mattes Finish
-                node.material.metalness = 0.0;
-                node.material.emissive = new THREE.Color(0x122016); // Dezent magischer Waldschimmer
-                node.material.emissiveIntensity = 0.18;
+                // 2. Körperfarbe auf strahlendes Reinweiß setzen
+                node.material.color = new THREE.Color(0xffffff);
                 
+                // 3. Dezent grünes Geister-Leuchten (Glow)
+                node.material.emissive = new THREE.Color(0x22aa55); // Magisches Waldgrün
+                node.material.emissiveIntensity = 0.18;            // Leichtes Leuchten
+                
+                node.material.roughness = 0.75;
+                node.material.metalness = 0.0;
+                
+                // Gemalte Gesichter beibehalten
                 node.material.needsUpdate = true;
               }
             });
