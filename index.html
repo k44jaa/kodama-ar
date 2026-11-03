@@ -14,8 +14,8 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
-  <!-- Autonomous AR Agent Logic -->
-  <script src="./app.js"></script>
+  <!-- Autonomous AR Agent Logic mit Cache-Buster v9 -->
+  <script src="./app.js?v=9"></script>
 
   <style>
     body {
@@ -24,7 +24,6 @@
       font-family: 'Quicksand', system-ui, -apple-system, sans-serif;
     }
 
-    /* Start Overlay Container */
     #overlay {
       position: fixed;
       top: 0;
@@ -43,7 +42,6 @@
       overflow: hidden;
     }
 
-    /* Looping Background Video */
     #bg-video {
       position: absolute;
       top: 0;
@@ -54,7 +52,6 @@
       z-index: 0;
     }
 
-    /* Dark Vignette for Text Contrast */
     #video-tint {
       position: absolute;
       top: 0;
@@ -65,7 +62,6 @@
       z-index: 1;
     }
 
-    /* Interface Content */
     #overlay-content {
       position: relative;
       z-index: 2;
@@ -138,7 +134,6 @@
     magic-forest="count: 6">
 
     <a-assets>
-      <!-- Pre-loading aller 6 einzigartigen Kodama-Modelle -->
       <a-asset-item id="kodama-1" src="./assets/new_kodama_01.glb"></a-asset-item>
       <a-asset-item id="kodama-2" src="./assets/new_kodama_02.glb"></a-asset-item>
       <a-asset-item id="kodama-3" src="./assets/new_kodama_03.glb"></a-asset-item>
@@ -152,18 +147,14 @@
   </a-scene>
 
   <script>
-    const kodamaSound = new Audio('./assets/sound.mp3');
-    kodamaSound.loop = true;
-    kodamaSound.volume = 0.20;
-
+    // WICHTIG: Keine Hintergrund-Schleife mehr!
     document.querySelector('#start-btn').addEventListener('click', function() {
       let scene = document.querySelector('a-scene');
 
-      kodamaSound.play().then(() => {
-        console.log("Audio gestartet.");
-      }).catch(err => {
-        console.log("Audio Hinweis:", err);
-      });
+      // Schaltet das Audio-System auf iOS/Android stumm frei
+      if (window.playKodamaSound) {
+        window.playKodamaSound(0.02, 1.0, 200);
+      }
 
       const video = document.querySelector('#bg-video');
       if (video) video.pause();
