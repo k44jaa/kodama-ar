@@ -1,18 +1,25 @@
 // ============================================================
-// KODAMA AR - CREATIVE SPACE LEUPHANA
-// 6 Autonome Geister: Milchig-weiße Körper, gestochen scharfe Gesichter
-// (JS-Filter mit Texture-Reload), leise Akustik & ortsfeste Sitzer (3, 4 & 5)
+// KODAMA AR - CREATIVE SPACE LEUPHANA (v10)
+// 6 Autonome Geister: Ausgerichteter Blick zum User, gut hörbare
+// aber dezente Klapper-Akustik, milchig-weiße Körper & ortsfeste Sitzer
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
 
-// Geheimnisvolle, extrem subtile Klapper-Funktion
-window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
+// Gut wahrnehmbare, aber nicht-dominante Sound-Funktion
+window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0, maxDurationMs = 1000) {
   try {
     let snd = new Audio('./assets/sound.mp3');
-    snd.volume = Math.min(0.04, (0.015 + Math.random() * 0.02) * volFactor);
-    snd.playbackRate = (0.80 + Math.random() * 0.45) * pitchFactor;
-    snd.play().catch(() => {});
+    // Ausgewogene Lautstärke (ca. 6% bis 9%)
+    snd.volume = Math.min(0.09, (0.055 + Math.random() * 0.03) * volFactor);
+    snd.playbackRate = (0.85 + Math.random() * 0.35) * pitchFactor;
+    
+    snd.play().then(() => {
+      setTimeout(() => {
+        snd.pause();
+        snd.currentTime = 0;
+      }, maxDurationMs);
+    }).catch(() => {});
   } catch (e) {}
 };
 
@@ -29,7 +36,6 @@ AFRAME.registerComponent('magic-forest', {
       this.spawned = true;
 
       // 6 weit getrennte Zonen im Raum
-      // Kodamas 1, 2, 6 = fliegend | Kodamas 3, 4, 5 = ortsfest sitzend
       const PROFILES = [
         { modelId: '#kodama-1', isSitting: false, minX: -4.8, maxX: -2.8, minZ: -3.5, maxZ: -2.0, minY: 1.10, maxY: 1.50, speed: 0.45 },
         { modelId: '#kodama-2', isSitting: false, minX:  1.0, maxX:  3.2, minZ: -3.8, maxZ: -2.2, minY: 1.00, maxY: 1.40, speed: 0.50 },
@@ -60,13 +66,12 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Material-Anpassung & Gesichter-Erleuchtung
+        // Material-Anpassung & Gesichter-Filter
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
               if (node.isMesh) {
-                // Versteckte Vertex-Colors löschen
                 if (node.geometry && node.geometry.attributes.color) {
                   node.geometry.deleteAttribute('color');
                 }
@@ -74,7 +79,6 @@ AFRAME.registerComponent('magic-forest', {
                 if (node.material) {
                   node.material.vertexColors = false;
 
-                  // Textur-Anpassung: Augen & Mund hervorheben, Hintergrund weiß machen
                   if (node.material.map && node.material.map.image) {
                     let processTexture = () => {
                       try {
@@ -91,7 +95,6 @@ AFRAME.registerComponent('magic-forest', {
                         let imgData = ctx.getImageData(0, 0, width, height);
                         let data = imgData.data;
 
-                        // Augen & Mund (dunkle Pixel) schützen, grünen Hintergrund weiß machen
                         for (let p = 0; p < data.length; p += 4) {
                           let r = data[p];
                           let g = data[p+1];
@@ -99,13 +102,11 @@ AFRAME.registerComponent('magic-forest', {
                           let brightness = (r + g + b) / 3;
 
                           if (brightness < 110) {
-                            // Gesichtszüge knackig dunkel halten
                             data[p]   = Math.min(r, 30);
                             data[p+1] = Math.min(g, 30);
                             data[p+2] = Math.min(b, 30);
                             data[p+3] = 255;
                           } else {
-                            // Körperhintergrund auf milchiges Porzellan-Weiß setzen
                             data[p]   = 245;
                             data[p+1] = 250;
                             data[p+2] = 245;
@@ -116,7 +117,7 @@ AFRAME.registerComponent('magic-forest', {
 
                         let newTex = new THREE.CanvasTexture(canvas);
                         newTex.flipY = node.material.map.flipY;
-                        newTex.needsUpdate = true; // Wichtig: Zwingt WebGL zum Neu-Rendern der Gesichter!
+                        newTex.needsUpdate = true;
 
                         node.material.map = newTex;
                         node.material.needsUpdate = true;
@@ -133,7 +134,6 @@ AFRAME.registerComponent('magic-forest', {
                     }
                   }
 
-                  // Grundeigenschaften des Materials
                   node.material.transparent = false;
                   node.material.depthWrite = true;
                   node.material.opacity = 1.0;
@@ -142,7 +142,6 @@ AFRAME.registerComponent('magic-forest', {
                   node.material.roughness = 0.80;
                   node.material.metalness = 0.0;
 
-                  // Dezent grünlicher Geister-Schimmer im Schatten
                   node.material.emissive = new THREE.Color(0x183320);
                   node.material.emissiveIntensity = 0.22;
 
@@ -172,7 +171,7 @@ AFRAME.registerComponent('magic-forest', {
 });
 
 // ============================================================
-// AGENTEN-LOGIK: ENTSCHLEUNIGT & STRIKT ORTSFESTE SITZER
+// AGENTEN-LOGIK: MEISTENS BICK ZUM BESUCHER & GUTE AKUSTIK
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -198,7 +197,7 @@ AFRAME.registerComponent('kodama-agent', {
     this.targetQuaternion = new THREE.Quaternion();
     this.dummy = new THREE.Object3D();
 
-    this.state = this.data.isSitting ? 'SIT_BREATHE' : 'WANDER';
+    this.state = this.data.isSitting ? 'SIT_LOOK_AT_USER' : 'WANDER';
     this.targetPos = new THREE.Vector3();
     this.pickZoneTarget();
 
@@ -206,7 +205,8 @@ AFRAME.registerComponent('kodama-agent', {
   },
 
   scheduleNextDecision: function () {
-    let interval = 7000 + Math.random() * 6000;
+    // Angenehme Pausen zwischen Aktionen (5 bis 9 Sekunden)
+    let interval = 5000 + Math.random() * 4000;
 
     setTimeout(() => {
       this.makeDecision();
@@ -217,32 +217,34 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
-    if (Math.random() < 0.06) {
-      window.playKodamaSound(0.6, 1.0);
+    // 20% Chance pro Entscheidung für ein gut hörbares Klick-Geräusch (0.9s)
+    if (Math.random() < 0.20) {
+      window.playKodamaSound(1.0, 1.0, 900);
     }
 
     if (this.data.isSitting) {
-      if (rand < 0.45) {
+      // SITZENDE KODAMAS (3, 4, 5): SCHAUEN ZU 82% DIREKT ZUM USER!
+      if (rand < 0.82) {
         this.state = 'SIT_LOOK_AT_USER';
-        if (Math.random() < 0.18) {
-          window.playKodamaSound(0.5, 1.2);
+        if (Math.random() < 0.30) {
+          window.playKodamaSound(0.9, 1.15, 800);
         }
-      } else if (rand < 0.80) {
+      } else {
         this.state = 'SIT_ROTATE';
-        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.7;
+        // Wenn sie sich wegdrehen, nur ganz leicht und kurz
+        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.4;
         this.dummy.position.copy(this.el.object3D.position);
         this.dummy.rotation.copy(this.el.object3D.rotation);
         this.dummy.rotation.y += randomAngle;
         this.targetQuaternion.copy(this.dummy.quaternion);
-      } else {
-        this.state = 'SIT_BREATHE';
       }
     } else {
-      if (this.data.id === 1 && rand < 0.20 && !isAnyKodamaVisitingUser) {
+      // FLIEGENDE KODAMAS (1, 2, 6)
+      if (this.data.id === 1 && rand < 0.25 && !isAnyKodamaVisitingUser) {
         this.state = 'APPROACH_USER';
         isAnyKodamaVisitingUser = true;
 
-        window.playKodamaSound(0.8, 1.25);
+        window.playKodamaSound(1.1, 1.25, 950);
 
         setTimeout(() => {
           if (this.state === 'APPROACH_USER') {
@@ -251,13 +253,13 @@ AFRAME.registerComponent('kodama-agent', {
           }
         }, 9000);
 
-      } else if (rand < 0.75) {
+      } else if (rand < 0.70) {
         this.state = 'WANDER';
         this.pickZoneTarget();
 
       } else {
         this.state = 'ROTATE';
-        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.8;
+        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.5;
         this.dummy.position.copy(this.el.object3D.position);
         this.dummy.rotation.copy(this.el.object3D.rotation);
         this.dummy.rotation.y += randomAngle;
@@ -274,7 +276,7 @@ AFRAME.registerComponent('kodama-agent', {
     );
   },
 
-  smoothLookAt: function (targetVector, deltaSec, speed = 1.2) {
+  smoothLookAt: function (targetVector, deltaSec, speed = 1.4) {
     this.dummy.position.copy(this.el.object3D.position);
     this.dummy.lookAt(targetVector.x, this.el.object3D.position.y, targetVector.z);
     this.el.object3D.quaternion.slerp(this.dummy.quaternion, deltaSec * speed);
@@ -294,12 +296,13 @@ AFRAME.registerComponent('kodama-agent', {
 
       pos.y = this.data.baseY + (breathCycle * 0.003);
 
-      if (this.state === 'SIT_LOOK_AT_USER') {
-        let camPos = new THREE.Vector3();
-        this.cameraEl.object3D.getWorldPosition(camPos);
-        let lookTarget = new THREE.Vector3().subVectors(pos, camPos).add(pos);
-        this.smoothLookAt(lookTarget, deltaSec, 1.2);
+      // Schauen im Sitz-Zustand immer direkt zum Besucher
+      let camPos = new THREE.Vector3();
+      this.cameraEl.object3D.getWorldPosition(camPos);
+      let lookTarget = new THREE.Vector3().subVectors(pos, camPos).add(pos);
 
+      if (this.state === 'SIT_LOOK_AT_USER') {
+        this.smoothLookAt(lookTarget, deltaSec, 1.6);
       } else if (this.state === 'SIT_ROTATE') {
         this.el.object3D.quaternion.slerp(this.targetQuaternion, deltaSec * 0.8);
       }
@@ -310,8 +313,11 @@ AFRAME.registerComponent('kodama-agent', {
     let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
 
     if (this.state === 'WANDER') {
-      let flyTarget = new THREE.Vector3().subVectors(pos, this.targetPos).add(pos);
-      this.smoothLookAt(flyTarget, deltaSec, 1.5);
+      // Während des Fliegens orientieren sie ihre Blickrichtung auch meist leicht zum User
+      let camPos = new THREE.Vector3();
+      this.cameraEl.object3D.getWorldPosition(camPos);
+      let lookTarget = new THREE.Vector3().subVectors(pos, camPos).add(pos);
+      this.smoothLookAt(lookTarget, deltaSec, 1.2);
 
       pos.lerp(this.targetPos, deltaSec * 0.28 * this.data.moveSpeed);
       pos.y += hoverY * 0.10;
