@@ -1,37 +1,20 @@
 /**
  * @file app.js
  * @description Autonomous WebXR Agent Architecture for Markerless AR.
- * Controls spatial positioning, finite state machine behavior, bioluminescent 
- * particle systems, dynamic procedural texture contrast, and spatialized audio echoes.
+ * Features mobile WebXR touch raycasting, interactive approach mechanics,
+ * bioluminescent particle systems, and spatialized acoustic echoes.
  * 
- * @author Autonomous Spatial Agent Framework
- * @version 23.0.0
+ * @version 24.0.0
  */
 
-/**
- * Global Configuration Parameters
- * @type {Object}
- */
 const CONFIG = {
-  /** Rotation offset in radians to orient GLTF front mesh towards camera (-90 degrees) */
   MODEL_FACE_ANGLE_RAD: -Math.PI / 2,
-
-  /** Distance in meters from camera lens for greeting interaction */
-  GREETING_DISTANCE_METERS: 1.20,
-
-  /** Initial delay in milliseconds before triggering visitor greeting approach */
+  GREETING_DISTANCE_METERS: 1.10,
   GREETING_DELAY_MS: 2200,
-
-  /** Duration in milliseconds for visitor greeting state */
   GREETING_DURATION_MS: 10000,
-
-  /** Interval in milliseconds for collective harmony chord playback */
   HARMONY_INTERVAL_MS: 40000,
-
-  /** Spore particle count in environmental system */
   SPORE_COUNT: 95,
 
-  /** Audio engine configuration */
   AUDIO: {
     MAX_VOLUME: 0.09,
     BASE_VOLUME_MIN: 0.045,
@@ -40,7 +23,6 @@ const CONFIG = {
     FADE_STEP: 0.005
   },
 
-  /** Spatial bounds and behavioral profiles for entities */
   PROFILES: [
     { modelId: '#kodama-1', isSitting: false, minX: -4.5, maxX: -2.5, minZ: -5.0, maxZ: -3.5, minY: 1.10, maxY: 1.50, speed: 0.65 },
     { modelId: '#kodama-3', isSitting: true,  minX: -3.8, maxX: -2.2, minZ: -4.5, maxZ: -3.5, minY: 0.45, maxY: 0.45, speed: 0.0 },
@@ -51,15 +33,9 @@ const CONFIG = {
   ]
 };
 
-/** Global registry tracking active entity components */
 let isAnyKodamaVisitingUser = false;
 let allKodamaEntities = [];
 
-/**
- * Triggers audio playback with pitch manipulation and smooth volume decay.
- * @param {number} [volFactor=1.0] - Volume multiplier factor.
- * @param {number} [pitchFactor=1.0] - Playback rate multiplier factor.
- */
 window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
   try {
     const snd = new Audio('./assets/sound.mp3');
@@ -84,10 +60,6 @@ window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
   } catch (e) {}
 };
 
-/**
- * A-Frame Component: Magic Forest Environment Manager
- * Controls entity instantiation, procedural texture processing, particle systems, and harmony timing.
- */
 AFRAME.registerComponent('magic-forest', {
   schema: {
     count: { type: 'int', default: 6 }
@@ -102,6 +74,7 @@ AFRAME.registerComponent('magic-forest', {
       allKodamaEntities = [];
 
       this.createForestSpores(sceneEl);
+      this.setupMobileTouchRaycaster(sceneEl);
 
       const activeProfiles = CONFIG.PROFILES;
 
@@ -127,16 +100,12 @@ AFRAME.registerComponent('magic-forest', {
         const scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        /**
-         * Procedural canvas texture contrast processing:
-         * Standardizes skin brightness and sharpens facial features.
-         */
         kodama.addEventListener('model-loaded', () => {
           const mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
               if (node.isMesh) {
-                node.el = kodama;
+                node.userData.parentEntity = kodama;
                 
                 if (node.geometry && node.geometry.attributes.color) {
                   node.geometry.deleteAttribute('color');
@@ -212,14 +181,6 @@ AFRAME.registerComponent('magic-forest', {
           }
         });
 
-        const handleTouch = () => {
-          const agent = kodama.components['kodama-agent'];
-          if (agent) agent.onUserTouch();
-        };
-
-        kodama.addEventListener('click', handleTouch);
-        kodama.addEventListener('mousedown', handleTouch);
-
         kodama.setAttribute('kodama-agent', {
           id: i,
           isSitting: profile.isSitting,
@@ -252,10 +213,58 @@ AFRAME.registerComponent('magic-forest', {
     });
   },
 
-  /**
-   * Instantiates an ambient bioluminescent spore particle system.
-   * @param {Object} sceneEl - Parent A-Frame scene element.
-   */
+  /** Native screen touch raycaster for 100% WebXR touch detection */
+  setupMobileTouchRaycaster: function (sceneEl) {
+    const handleScreenTouch = (e) => {
+      let clientX = 0, clientY = 0;
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else if (e.clientX !== undefined) {
+        clientX = e.clientX;
+        clientY = e.clientY;
+      } else return;
+
+      const mouse = new THREE.Vector2(
+        (clientX / window.innerWidth) * 2 - 1,
+        -(clientY / window.innerHeight) * 2 + 1
+      );
+
+      const camera = sceneEl.camera;
+      if (!camera) return;
+
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(mouse, camera);
+
+      const meshes = [];
+      allKodamaEntities.forEach(el => {
+        const m = el.getObject3D('mesh');
+        if (m) meshes.push(m);
+      });
+
+      const intersects = raycaster.intersectObjects(meshes, true);
+      if (intersects.length > 0) {
+        let hitObj = intersects[0].object;
+        let parentEnt = hitObj.userData.parentEntity;
+
+        while (hitObj && !parentEnt) {
+          hitObj = hitObj.parent;
+          if (hitObj && hitObj.userData && hitObj.userData.parentEntity) {
+            parentEnt = hitObj.userData.parentEntity;
+          }
+        }
+
+        if (parentEnt) {
+          const agent = parentEnt.components['kodama-agent'];
+          if (agent) agent.onUserTouch();
+        }
+      }
+    };
+
+    window.addEventListener('touchstart', handleScreenTouch, { passive: true });
+    window.addEventListener('click', handleScreenTouch);
+  },
+
   createForestSpores: function (sceneEl) {
     const pCount = CONFIG.SPORE_COUNT;
     const pGeo = new THREE.BufferGeometry();
@@ -300,7 +309,6 @@ AFRAME.registerComponent('magic-forest', {
     });
   },
 
-  /** Triggers sequential cascading audio and luminescent pulses across entities */
   triggerForestHarmony: function () {
     allKodamaEntities.forEach((kodamaEl, idx) => {
       setTimeout(() => {
@@ -314,11 +322,6 @@ AFRAME.registerComponent('magic-forest', {
   }
 });
 
-/**
- * A-Frame Component: Kodama Autonomous Agent Controller
- * Implements a Finite State Machine (FSM) controlling spatial navigation, camera tracking,
- * raycast touch reaction, and acoustic response signals.
- */
 AFRAME.registerComponent('kodama-agent', {
   schema: {
     id: { type: 'int' },
@@ -352,39 +355,40 @@ AFRAME.registerComponent('kodama-agent', {
     this.scheduleNextDecision();
   },
 
-  /** User raycast/touch interaction handler */
+  /** Rich touch reaction: bioluminescent burst, double hop & curious flight approach */
   onUserTouch: function () {
-    this.shakeTimer = 0.90;
-    this.touchJumpTimer = 0.60;
-    window.playKodamaSound(1.3, 1.35);
-    this.pulseEmissiveGlow(0.95, 1600);
+    this.shakeTimer = 1.10;
+    this.touchJumpTimer = 0.75;
+    
+    // High-pitched excited rattle
+    window.playKodamaSound(1.4, 1.45);
+    
+    // Bright bioluminescent glow flash
+    this.pulseEmissiveGlow(1.20, 1800);
 
+    // Neighboring spirits turn to watch and echo
     const myPos = this.el.object3D.position;
     allKodamaEntities.forEach(otherEl => {
       if (otherEl !== this.el) {
         const otherAgent = otherEl.components['kodama-agent'];
         if (otherAgent) {
           const dist = myPos.distanceTo(otherEl.object3D.position);
-          if (dist < 4.5 && Math.random() < 0.50) {
-            const echoDelay = 300 + Math.random() * 450;
+          if (dist < 4.5) {
             setTimeout(() => {
+              otherAgent.smoothLookAtTarget(myPos, 0.016, 3.0);
               otherAgent.respondToEcho();
-            }, echoDelay);
+            }, 250 + Math.random() * 350);
           }
         }
       }
     });
 
-    if (!this.data.isSitting && !isAnyKodamaVisitingUser) {
+    // The touched Kodama flies over to investigate the user!
+    if (!this.data.isSitting) {
       this.startGreetingApproach();
     }
   },
 
-  /**
-   * Temporarily increases material emissive brightness.
-   * @param {number} [intensity=0.6] - Target emissive intensity.
-   * @param {number} [durationMs=1200] - Duration in milliseconds.
-   */
   pulseEmissiveGlow: function (intensity = 0.6, durationMs = 1200) {
     const mesh = this.el.getObject3D('mesh');
     if (mesh) {
@@ -399,13 +403,12 @@ AFRAME.registerComponent('kodama-agent', {
     }
   },
 
-  /** Triggers camera approach vector flight state */
   startGreetingApproach: function () {
     this.state = 'APPROACH_USER';
     isAnyKodamaVisitingUser = true;
 
     this.triggerSoundAndHeadShake(1.3, 1.25);
-    this.pulseEmissiveGlow(0.85, 2500);
+    this.pulseEmissiveGlow(0.90, 2500);
 
     setTimeout(() => {
       if (this.state === 'APPROACH_USER') {
@@ -415,18 +418,12 @@ AFRAME.registerComponent('kodama-agent', {
     }, CONFIG.GREETING_DURATION_MS);
   },
 
-  /**
-   * Plays sound effect and initiates head shake motion.
-   * @param {number} [volFactor=1.0] - Volume factor.
-   * @param {number} [pitchStart=1.25] - Pitch factor.
-   */
   triggerSoundAndHeadShake: function (volFactor = 1.0, pitchStart = 1.25) {
     this.shakeTimer = 0.85;
     window.playKodamaSound(volFactor, pitchStart);
     this.triggerEchoToNeighbors();
   },
 
-  /** Evaluates proximity to trigger delayed neighbor acoustic echoes */
   triggerEchoToNeighbors: function () {
     const myPos = this.el.object3D.position;
 
@@ -446,13 +443,11 @@ AFRAME.registerComponent('kodama-agent', {
     });
   },
 
-  /** Secondary response callback for acoustic echoes */
   respondToEcho: function () {
     this.shakeTimer = 0.50;
     window.playKodamaSound(0.6, 1.10);
   },
 
-  /** Asynchronous scheduler for autonomous FSM state transitions */
   scheduleNextDecision: function () {
     const interval = 5500 + Math.random() * 4500;
 
@@ -462,7 +457,6 @@ AFRAME.registerComponent('kodama-agent', {
     }, interval);
   },
 
-  /** Evaluates stochastic probabilities to switch state machine modes */
   makeDecision: function () {
     const rand = Math.random();
 
@@ -493,7 +487,6 @@ AFRAME.registerComponent('kodama-agent', {
     }
   },
 
-  /** Computes randomized destination target within designated bounding volume */
   pickZoneTarget: function () {
     this.targetPos.set(
       this.data.zoneMinX + Math.random() * (this.data.zoneMaxX - this.data.zoneMinX),
@@ -502,11 +495,6 @@ AFRAME.registerComponent('kodama-agent', {
     );
   },
 
-  /**
-   * Smoothly interpolates orientation towards camera node with face angle adjustment.
-   * @param {number} deltaSec - Frame delta time in seconds.
-   * @param {number} [speed=2.4] - Interpolation speed factor.
-   */
   smoothLookAtCamera: function (deltaSec, speed = 2.4) {
     const camPos = new THREE.Vector3();
     this.cameraEl.object3D.getWorldPosition(camPos);
@@ -519,12 +507,6 @@ AFRAME.registerComponent('kodama-agent', {
     this.el.object3D.quaternion.slerp(this.dummy.quaternion, deltaSec * speed);
   },
 
-  /**
-   * Smoothly interpolates orientation towards target vector position.
-   * @param {THREE.Vector3} targetVector - Target position.
-   * @param {number} deltaSec - Frame delta time in seconds.
-   * @param {number} [speed=1.4] - Interpolation speed factor.
-   */
   smoothLookAtTarget: function (targetVector, deltaSec, speed = 1.4) {
     const pos = this.el.object3D.position;
     this.dummy.position.copy(pos);
@@ -533,18 +515,13 @@ AFRAME.registerComponent('kodama-agent', {
     this.el.object3D.quaternion.slerp(this.dummy.quaternion, deltaSec * speed);
   },
 
-  /**
-   * Per-frame render loop step function.
-   * @param {number} time - Total scene runtime in milliseconds.
-   * @param {number} timeDelta - Frame delta time in milliseconds.
-   */
   tick: function (time, timeDelta) {
     const deltaSec = timeDelta / 1000;
     this.timeOffset += deltaSec;
 
     const pos = this.el.object3D.position;
 
-    // Head shake rotation jitter
+    // Head shake rotation
     if (this.shakeTimer > 0) {
       this.shakeTimer -= deltaSec;
       const shakeJitter = Math.sin(this.shakeTimer * 38) * 0.09;
@@ -552,14 +529,13 @@ AFRAME.registerComponent('kodama-agent', {
       this.el.object3D.rotation.z += shakeJitter * 0.5;
     }
 
-    // Touch reaction vertical bounce
+    // Touch jump height
     let touchJumpY = 0;
     if (this.touchJumpTimer > 0) {
       this.touchJumpTimer -= deltaSec;
-      touchJumpY = Math.sin(this.touchJumpTimer * Math.PI * 3) * 0.12;
+      touchJumpY = Math.sin(this.touchJumpTimer * Math.PI * 4) * 0.16;
     }
 
-    // Sitting entity execution branch
     if (this.data.isSitting) {
       const breathCycle = Math.sin(this.timeOffset * this.breathSpeed * 1.2);
       const scaleOffset = breathCycle * 0.015;
@@ -578,10 +554,8 @@ AFRAME.registerComponent('kodama-agent', {
       return;
     }
 
-    // Flying entity execution branch
     const hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight + touchJumpY;
 
-    // Soft anti-collision steering repulsive force
     allKodamaEntities.forEach(other => {
       if (other !== this.el) {
         const otherPos = other.object3D.position;
@@ -627,7 +601,6 @@ AFRAME.registerComponent('kodama-agent', {
       this.cameraEl.object3D.getWorldPosition(camPos);
       this.cameraEl.object3D.getWorldDirection(camDir);
 
-      // Calculates position vector 1.20m directly in front of camera lens
       const targetFront = new THREE.Vector3()
         .copy(camPos)
         .addScaledVector(camDir, -CONFIG.GREETING_DISTANCE_METERS);
