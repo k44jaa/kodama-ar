@@ -1,24 +1,32 @@
 // ============================================================
-// KODAMA AR - CREATIVE SPACE LEUPHANA (v10)
-// 6 Autonome Geister: Ausgerichteter Blick zum User, gut hörbare
-// aber dezente Klapper-Akustik, milchig-weiße Körper & ortsfeste Sitzer
+// KODAMA AR - CREATIVE SPACE LEUPHANA (v11)
+// 6 Autonome Geister: Direkter Blick ZUM USER (Kamera-Fix),
+// weicher & natürlicher Holz-Klang (Fade-Out), milchig-weiße Körper
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
 
-// Gut wahrnehmbare, aber nicht-dominante Sound-Funktion
-window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0, maxDurationMs = 1000) {
+// Weiche, harmonische Klapper-Funktion (ohne hartes Abbrechen)
+window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
   try {
     let snd = new Audio('./assets/sound.mp3');
-    // Ausgewogene Lautstärke (ca. 6% bis 9%)
-    snd.volume = Math.min(0.09, (0.055 + Math.random() * 0.03) * volFactor);
-    snd.playbackRate = (0.85 + Math.random() * 0.35) * pitchFactor;
+    // Sanfte, gut hörbare Lautstärke (ca. 4.5% bis 7%)
+    snd.volume = Math.min(0.07, (0.04 + Math.random() * 0.025) * volFactor);
+    // Warme, natürliche Tonhöhe (kein schrilles Kreischen)
+    snd.playbackRate = (0.92 + Math.random() * 0.16) * pitchFactor;
     
     snd.play().then(() => {
+      // Sanftes Ausfaden statt abruptem Cut
       setTimeout(() => {
-        snd.pause();
-        snd.currentTime = 0;
-      }, maxDurationMs);
+        let fade = setInterval(() => {
+          if (snd.volume > 0.005) {
+            snd.volume -= 0.005;
+          } else {
+            clearInterval(fade);
+            snd.pause();
+          }
+        }, 35);
+      }, 750);
     }).catch(() => {});
   } catch (e) {}
 };
@@ -35,7 +43,6 @@ AFRAME.registerComponent('magic-forest', {
       if (this.spawned) return;
       this.spawned = true;
 
-      // 6 weit getrennte Zonen im Raum
       const PROFILES = [
         { modelId: '#kodama-1', isSitting: false, minX: -4.8, maxX: -2.8, minZ: -3.5, maxZ: -2.0, minY: 1.10, maxY: 1.50, speed: 0.45 },
         { modelId: '#kodama-2', isSitting: false, minX:  1.0, maxX:  3.2, minZ: -3.8, maxZ: -2.2, minY: 1.00, maxY: 1.40, speed: 0.50 },
@@ -171,7 +178,7 @@ AFRAME.registerComponent('magic-forest', {
 });
 
 // ============================================================
-// AGENTEN-LOGIK: MEISTENS BICK ZUM BESUCHER & GUTE AKUSTIK
+// AGENTEN-LOGIK: DIREKTER KORREKTER BLICK ZUM BESUCHER
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -205,7 +212,6 @@ AFRAME.registerComponent('kodama-agent', {
   },
 
   scheduleNextDecision: function () {
-    // Angenehme Pausen zwischen Aktionen (5 bis 9 Sekunden)
     let interval = 5000 + Math.random() * 4000;
 
     setTimeout(() => {
@@ -217,34 +223,32 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
-    // 20% Chance pro Entscheidung für ein gut hörbares Klick-Geräusch (0.9s)
-    if (Math.random() < 0.20) {
-      window.playKodamaSound(1.0, 1.0, 900);
+    // 18% Chance für ein sanftes Klappern
+    if (Math.random() < 0.18) {
+      window.playKodamaSound(1.0, 1.0);
     }
 
     if (this.data.isSitting) {
-      // SITZENDE KODAMAS (3, 4, 5): SCHAUEN ZU 82% DIREKT ZUM USER!
-      if (rand < 0.82) {
+      // Sitzende Kodamas schauen zu 85% direkt zum Besucher
+      if (rand < 0.85) {
         this.state = 'SIT_LOOK_AT_USER';
-        if (Math.random() < 0.30) {
-          window.playKodamaSound(0.9, 1.15, 800);
+        if (Math.random() < 0.25) {
+          window.playKodamaSound(0.9, 1.1);
         }
       } else {
         this.state = 'SIT_ROTATE';
-        // Wenn sie sich wegdrehen, nur ganz leicht und kurz
-        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.4;
+        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.3;
         this.dummy.position.copy(this.el.object3D.position);
         this.dummy.rotation.copy(this.el.object3D.rotation);
         this.dummy.rotation.y += randomAngle;
         this.targetQuaternion.copy(this.dummy.quaternion);
       }
     } else {
-      // FLIEGENDE KODAMAS (1, 2, 6)
       if (this.data.id === 1 && rand < 0.25 && !isAnyKodamaVisitingUser) {
         this.state = 'APPROACH_USER';
         isAnyKodamaVisitingUser = true;
 
-        window.playKodamaSound(1.1, 1.25, 950);
+        window.playKodamaSound(1.1, 1.2);
 
         setTimeout(() => {
           if (this.state === 'APPROACH_USER') {
@@ -259,7 +263,7 @@ AFRAME.registerComponent('kodama-agent', {
 
       } else {
         this.state = 'ROTATE';
-        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.5;
+        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.4;
         this.dummy.position.copy(this.el.object3D.position);
         this.dummy.rotation.copy(this.el.object3D.rotation);
         this.dummy.rotation.y += randomAngle;
@@ -276,9 +280,16 @@ AFRAME.registerComponent('kodama-agent', {
     );
   },
 
-  smoothLookAt: function (targetVector, deltaSec, speed = 1.4) {
-    this.dummy.position.copy(this.el.object3D.position);
-    this.dummy.lookAt(targetVector.x, this.el.object3D.position.y, targetVector.z);
+  // Korrigierter direkter Blick zur Kamera
+  smoothLookAtUser: function (deltaSec, speed = 1.8) {
+    let camPos = new THREE.Vector3();
+    this.cameraEl.object3D.getWorldPosition(camPos);
+    
+    let pos = this.el.object3D.position;
+    this.dummy.position.copy(pos);
+    // Ausrichtung direkt auf die Smartphone-Kamera
+    this.dummy.lookAt(camPos.x, pos.y, camPos.z);
+    
     this.el.object3D.quaternion.slerp(this.dummy.quaternion, deltaSec * speed);
   },
 
@@ -296,13 +307,8 @@ AFRAME.registerComponent('kodama-agent', {
 
       pos.y = this.data.baseY + (breathCycle * 0.003);
 
-      // Schauen im Sitz-Zustand immer direkt zum Besucher
-      let camPos = new THREE.Vector3();
-      this.cameraEl.object3D.getWorldPosition(camPos);
-      let lookTarget = new THREE.Vector3().subVectors(pos, camPos).add(pos);
-
       if (this.state === 'SIT_LOOK_AT_USER') {
-        this.smoothLookAt(lookTarget, deltaSec, 1.6);
+        this.smoothLookAtUser(deltaSec, 1.8);
       } else if (this.state === 'SIT_ROTATE') {
         this.el.object3D.quaternion.slerp(this.targetQuaternion, deltaSec * 0.8);
       }
@@ -313,11 +319,8 @@ AFRAME.registerComponent('kodama-agent', {
     let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
 
     if (this.state === 'WANDER') {
-      // Während des Fliegens orientieren sie ihre Blickrichtung auch meist leicht zum User
-      let camPos = new THREE.Vector3();
-      this.cameraEl.object3D.getWorldPosition(camPos);
-      let lookTarget = new THREE.Vector3().subVectors(pos, camPos).add(pos);
-      this.smoothLookAt(lookTarget, deltaSec, 1.2);
+      // Während des Schwebens richten sie ihren Blick sanft zum User
+      this.smoothLookAtUser(deltaSec, 1.2);
 
       pos.lerp(this.targetPos, deltaSec * 0.28 * this.data.moveSpeed);
       pos.y += hoverY * 0.10;
@@ -328,11 +331,10 @@ AFRAME.registerComponent('kodama-agent', {
       }
 
     } else if (this.state === 'APPROACH_USER') {
+      this.smoothLookAtUser(deltaSec, 2.0);
+
       let camPos = new THREE.Vector3();
       this.cameraEl.object3D.getWorldPosition(camPos);
-
-      let lookTarget = new THREE.Vector3().subVectors(pos, camPos).add(pos);
-      this.smoothLookAt(lookTarget, deltaSec, 1.8);
 
       let dist = pos.distanceTo(camPos);
       if (dist > 1.0) {
@@ -344,8 +346,7 @@ AFRAME.registerComponent('kodama-agent', {
       pos.y = THREE.MathUtils.lerp(pos.y, camPos.y - 0.05, deltaSec * 0.8) + hoverY * 0.1;
 
     } else if (this.state === 'RETURN_TO_ZONE') {
-      let flyTarget = new THREE.Vector3().subVectors(pos, this.targetPos).add(pos);
-      this.smoothLookAt(flyTarget, deltaSec, 1.4);
+      this.smoothLookAtUser(deltaSec, 1.2);
 
       pos.lerp(this.targetPos, deltaSec * 0.28 * this.data.moveSpeed);
       pos.y += hoverY * 0.10;
