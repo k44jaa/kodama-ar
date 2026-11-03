@@ -1,18 +1,20 @@
 // ============================================================
 // KODAMA AR - CREATIVE SPACE LEUPHANA
-// 6 Autonome Geister: Traditionell milchig-weiß (undurchsichtig),
-// beibehaltene Gesichter (Texture Map), entschleunigte Bewegung
+// 6 Autonome Geister: Subtile, seltene Akustik ("Hörst du das auch?"),
+// traditionell milchig-weißes Material, beibehaltene Gesichter
 // & ortsfeste Sitzer (Kodamas 3, 4 & 5)
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
 
-// Subtile Sound-Funktion für spontanes, leises Klappern
+// Geheimnisvolle, extrem subtile Klapper-Funktion
 window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
   try {
     let snd = new Audio('./assets/sound.mp3');
-    snd.volume = Math.min(0.08, (0.02 + Math.random() * 0.04) * volFactor);
-    snd.playbackRate = (0.85 + Math.random() * 0.35) * pitchFactor;
+    // Sanftes Flüsterniveau (ca. 1.5% bis 3.5% Lautstärke)
+    snd.volume = Math.min(0.04, (0.015 + Math.random() * 0.02) * volFactor);
+    // Zufällige Tonhöhe/Geschwindigkeit (klingt nach unterschiedlichen Holz-Klicks)
+    snd.playbackRate = (0.80 + Math.random() * 0.45) * pitchFactor;
     snd.play().catch(() => {});
   } catch (e) {}
 };
@@ -78,19 +80,16 @@ AFRAME.registerComponent('magic-forest', {
           if (mesh) {
             mesh.traverse((node) => {
               if (node.isMesh && node.material) {
-                // 1. Transparenz & innere Überlappungen komplett deaktivieren
                 node.material.transparent = false;
                 node.material.depthWrite = true;
                 node.material.opacity = 1.0;
                 
-                // 2. Traditionelle milchig-weiße Porzellan-Farbe setzen
-                node.material.color = new THREE.Color(0xf0f5f0);
-                node.material.roughness = 0.85; // Mattes Finish
+                node.material.color = new THREE.Color(0xf0f5f0); // Milchiges Porzellan-Weiß
+                node.material.roughness = 0.85;                  // Mattes Finish
                 node.material.metalness = 0.0;
                 node.material.emissive = new THREE.Color(0x122016); // Dezent magischer Waldschimmer
                 node.material.emissiveIntensity = 0.18;
                 
-                // 3. WICHTIG: Deine gemalte Textur (Augen & Mund) bleibt aktiv!
                 node.material.needsUpdate = true;
               }
             });
@@ -116,7 +115,7 @@ AFRAME.registerComponent('magic-forest', {
 });
 
 // ============================================================
-// AGENTEN-LOGIK: ENTSCHLEUNIGT & STRIKT ORTSFESTE SITZER
+// AGENTEN-LOGIK: SPARSAME, GEHEIMNISVOLLE SOUND-IMPULSE
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -150,7 +149,8 @@ AFRAME.registerComponent('kodama-agent', {
   },
 
   scheduleNextDecision: function () {
-    let interval = 6000 + Math.random() * 5000;
+    // Entspannte, lange Bedenkzeiten (7 bis 13 Sekunden)
+    let interval = 7000 + Math.random() * 6000;
 
     setTimeout(() => {
       this.makeDecision();
@@ -161,15 +161,20 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
-    if (Math.random() < 0.15) {
-      window.playKodamaSound(0.7, 1.0);
+    // Nur 6% Chance pro Entscheidung für ein extrem leises Klick-Geräusch
+    if (Math.random() < 0.06) {
+      window.playKodamaSound(0.6, 1.0);
     }
 
     if (this.data.isSitting) {
-      if (rand < 0.50) {
+      // SITZENDE KODAMAS (3, 4, 5): BLEIBEN AN ORT UND STELLE
+      if (rand < 0.45) {
         this.state = 'SIT_LOOK_AT_USER';
-        window.playKodamaSound(0.6, 1.1);
-      } else if (rand < 0.85) {
+        // Gelegentlich ein ganz feiner Laut beim Blickkontakt
+        if (Math.random() < 0.18) {
+          window.playKodamaSound(0.5, 1.2);
+        }
+      } else if (rand < 0.80) {
         this.state = 'SIT_ROTATE';
         let randomAngle = (Math.random() - 0.5) * Math.PI * 0.7;
         this.dummy.position.copy(this.el.object3D.position);
@@ -180,10 +185,13 @@ AFRAME.registerComponent('kodama-agent', {
         this.state = 'SIT_BREATHE';
       }
     } else {
+      // FLIEGENDE KODAMAS (1, 2, 6)
       if (this.data.id === 1 && rand < 0.20 && !isAnyKodamaVisitingUser) {
         this.state = 'APPROACH_USER';
         isAnyKodamaVisitingUser = true;
-        window.playKodamaSound(1.0, 1.2);
+
+        // Ein neugieriger, hellerer Flüster-Laut beim Aufbruch zum Besucher
+        window.playKodamaSound(0.8, 1.25);
 
         setTimeout(() => {
           if (this.state === 'APPROACH_USER') {
