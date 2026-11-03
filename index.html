@@ -14,8 +14,8 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
-  <!-- Autonomous AR Agent Logic mit Cache-Buster v9 -->
-  <script src="./app.js?v=9"></script>
+  <!-- Autonomous AR Agent Logic mit Cache-Buster v11 -->
+  <script src="./app.js?v=11"></script>
 
   <style>
     body {
@@ -126,7 +126,7 @@
     </div>
   </div>
 
-  <!-- A-Frame AR Scene mit genau 6 Geistern -->
+  <!-- A-Frame AR Scene -->
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
     vr-mode-ui="enabled: false"
@@ -147,13 +147,11 @@
   </a-scene>
 
   <script>
-    // WICHTIG: Keine Hintergrund-Schleife mehr!
     document.querySelector('#start-btn').addEventListener('click', function() {
       let scene = document.querySelector('a-scene');
 
-      // Schaltet das Audio-System auf iOS/Android stumm frei
       if (window.playKodamaSound) {
-        window.playKodamaSound(0.02, 1.0, 200);
+        window.playKodamaSound(0.05, 1.0);
       }
 
       const video = document.querySelector('#bg-video');
