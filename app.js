@@ -1,7 +1,8 @@
 // ============================================================
 // KODAMA AR - CREATIVE SPACE LEUPHANA
-// 6 Autonome Geister: Traditonell milchig-weiß (undurchsichtig),
-// entschleunigte Bewegung & ortsfeste Sitzer (Kodamas 3, 4 & 5)
+// 6 Autonome Geister: Traditionell milchig-weiß (undurchsichtig),
+// beibehaltene Gesichter (Texture Map), entschleunigte Bewegung
+// & ortsfeste Sitzer (Kodamas 3, 4 & 5)
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
@@ -56,7 +57,6 @@ AFRAME.registerComponent('magic-forest', {
 
         kodama.setAttribute('gltf-model', profile.modelId);
 
-        // Entspanntes Tempo für das Kopfwackeln
         let animSpeed = (0.50 + Math.random() * 0.35).toFixed(2);
         kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${animSpeed}`);
 
@@ -72,22 +72,25 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-          // Behält deine gemalten Gesichter bei, macht den Körper aber undurchsichtig
+        // Material-Anpassung: TRADITIONELL WEISS + BEIBEHALTENE GESICHTER
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
               if (node.isMesh && node.material) {
-                // Transparenz & Überlappungsfehler deaktivieren
+                // 1. Transparenz & innere Überlappungen komplett deaktivieren
                 node.material.transparent = false;
                 node.material.depthWrite = true;
                 node.material.opacity = 1.0;
                 
-                // Optik verfeinern (ohne deine Textur zu löschen!)
-                node.material.roughness = 0.85;
+                // 2. Traditionelle milchig-weiße Porzellan-Farbe setzen
+                node.material.color = new THREE.Color(0xf0f5f0);
+                node.material.roughness = 0.85; // Mattes Finish
                 node.material.metalness = 0.0;
+                node.material.emissive = new THREE.Color(0x122016); // Dezent magischer Waldschimmer
+                node.material.emissiveIntensity = 0.18;
                 
-                // WICHTIG: Deine gemalte Textur (Augen/Mund) bleibt aktiv!
+                // 3. WICHTIG: Deine gemalte Textur (Augen & Mund) bleibt aktiv!
                 node.material.needsUpdate = true;
               }
             });
