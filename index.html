@@ -14,8 +14,8 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
 
-  <!-- Autonomous AR Agent Logic mit Cache-Buster v21 -->
-  <script src="./app.js?v=21"></script>
+  <!-- Autonomous AR Agent Logic mit Cache-Buster v22 -->
+  <script src="./app.js?v=22"></script>
 
   <style>
     body {
@@ -126,7 +126,7 @@
     </div>
   </div>
 
-  <!-- A-Frame AR Scene mit Touch-Raycaster -->
+  <!-- A-Frame AR Scene mit optimiertem Touch-Raycaster -->
   <a-scene 
     webxr="optionalFeatures: hit-test, ar-modes; referenceSpaceType: local"
     vr-mode-ui="enabled: false"
@@ -142,7 +142,7 @@
       <a-asset-item id="kodama-6" src="./assets/new_kodama_06.glb"></a-asset-item>
     </a-assets>
 
-    <a-camera position="0 1.6 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable"></a-camera>
+    <a-camera id="main-camera" position="0 1.6 0" look-controls="enabled: false" cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable, [gltf-model]; recursive: true"></a-camera>
 
   </a-scene>
 
