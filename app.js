@@ -1,18 +1,18 @@
 // ============================================================
-// KODAMA AR - CREATIVE SPACE LEUPHANA (v15)
-// 6 Autonome Geister: Großer Raumabstand, zufällige organische
-// Blickrichtungen, Begrüßungsanflug beim Start & schwebende Sitzer
+// KODAMA AR - CREATIVE SPACE LEUPHANA (v16 - Ghibli "Ma" & Echo Edition)
+// Synchronisiertes Kopf-Wackeln + Sound, Kettenreaktion (Echo),
+// Paar-Gruppierung, sanfte Stille & Anflug nach wenigen Sekunden ("Hallo sagen")
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
 let allKodamaEntities = [];
 
-// Warmes, geschmeidiges Klappern mit Fade-Out
+// Warmes, geschmeidiges Klappern mit sanftem Fade-Out
 window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
   try {
     let snd = new Audio('./assets/sound.mp3');
-    snd.volume = Math.min(0.07, (0.04 + Math.random() * 0.025) * volFactor);
-    snd.playbackRate = (0.92 + Math.random() * 0.16) * pitchFactor;
+    snd.volume = Math.min(0.07, (0.035 + Math.random() * 0.025) * volFactor);
+    snd.playbackRate = (0.90 + Math.random() * 0.18) * pitchFactor;
     
     snd.play().then(() => {
       setTimeout(() => {
@@ -24,7 +24,7 @@ window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
             snd.pause();
           }
         }, 35);
-      }, 750);
+      }, 700);
     }).catch(() => {});
   } catch (e) {}
 };
@@ -42,25 +42,19 @@ AFRAME.registerComponent('magic-forest', {
       this.spawned = true;
       allKodamaEntities = [];
 
-      // SEHR GROSSE ABSTÄNDE IM GESAMTEN RAUM (X von -7.0m bis +7.0m, Z von -4.0m bis -11.0m)
+      // PAAR- & GRUPPEN-ANORDNUNG (Ghibli-Ökosystem mit "Ma")
       const PROFILES = [
-        // Kodama 1: Fliegend (Weit Links - kommt direkt beim Start besuchen!)
-        { modelId: '#kodama-1', isSitting: false, minX: -6.5, maxX: -3.5, minZ: -6.0, maxZ: -4.0, minY: 1.10, maxY: 1.60, speed: 0.65 },
+        // PAAR 1 (Links): Kodama 1 (fliegend) & Kodama 3 (sitzend/schwebend nahebei)
+        { modelId: '#kodama-1', isSitting: false, minX: -5.0, maxX: -3.0, minZ: -5.5, maxZ: -4.0, minY: 1.10, maxY: 1.50, speed: 0.50 },
+        { modelId: '#kodama-3', isSitting: true,  minX: -4.2, maxX: -2.8, minZ: -5.0, maxZ: -3.8, minY: 0.45, maxY: 0.45, speed: 0.0 },
         
-        // Kodama 2: Fliegend (Weit Rechts)
-        { modelId: '#kodama-2', isSitting: false, minX:  3.5, maxX:  6.5, minZ: -6.5, maxZ: -4.5, minY: 1.00, maxY: 1.50, speed: 0.60 },
-        
-        // Kodama 3: SITZEND (Links auf 4.5m Tiefe - schwebt geschmeidig am Ort)
-        { modelId: '#kodama-3', isSitting: true,  minX: -4.0, maxX: -2.5, minZ: -5.2, maxZ: -4.2, minY: 0.50, maxY: 0.50, speed: 0.0 },
-        
-        // Kodama 4: SITZEND (Mitte Tief auf 7.0m Tiefe - schwebt am Ort)
-        { modelId: '#kodama-4', isSitting: true,  minX: -1.2, maxX:  1.2, minZ: -7.5, maxZ: -6.0, minY: 0.35, maxY: 0.35, speed: 0.0 },
-        
-        // Kodama 5: SITZEND (Rechts auf 4.5m Tiefe - schwebt am Ort)
-        { modelId: '#kodama-5', isSitting: true,  minX:  2.5, maxX:  4.0, minZ: -5.2, maxZ: -4.2, minY: 0.60, maxY: 0.60, speed: 0.0 },
-        
-        // Kodama 6: Fliegend (Ganz tief im Raum unter der Decke auf 10m Tiefe)
-        { modelId: '#kodama-6', isSitting: false, minX: -3.5, maxX:  3.5, minZ: -11.0, maxZ: -8.5, minY: 2.10, maxY: 2.60, speed: 0.50 }
+        // PAAR 2 (Rechts): Kodama 2 (fliegend) & Kodama 5 (sitzend/schwebend nahebei)
+        { modelId: '#kodama-2', isSitting: false, minX:  3.0, maxX:  5.0, minZ: -5.5, maxZ: -4.0, minY: 1.00, maxY: 1.40, speed: 0.50 },
+        { modelId: '#kodama-5', isSitting: true,  minX:  2.8, maxX:  4.2, minZ: -5.0, maxZ: -3.8, minY: 0.55, maxY: 0.55, speed: 0.0 },
+
+        // EINZELGÄNGER TIEF IM RAUM: Kodama 4 (sitzend zentriert) & Kodama 6 (Hüter ganz tief)
+        { modelId: '#kodama-4', isSitting: true,  minX: -1.0, maxX:  1.0, minZ: -7.0, maxZ: -5.5, minY: 0.35, maxY: 0.35, speed: 0.0 },
+        { modelId: '#kodama-6', isSitting: false, minX: -3.5, maxX:  3.5, minZ: -10.5, maxZ: -8.0, minY: 2.10, maxY: 2.60, speed: 0.40 }
       ];
 
       for (let i = 0; i < Math.min(this.data.count, PROFILES.length); i++) {
@@ -69,7 +63,7 @@ AFRAME.registerComponent('magic-forest', {
 
         kodama.setAttribute('gltf-model', profile.modelId);
 
-        let animSpeed = (0.50 + Math.random() * 0.30).toFixed(2);
+        let animSpeed = (0.45 + Math.random() * 0.30).toFixed(2);
         kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${animSpeed}`);
 
         let startPos = {
@@ -79,13 +73,12 @@ AFRAME.registerComponent('magic-forest', {
         };
 
         kodama.setAttribute('position', startPos);
-        // Jeder Kodama startet mit einer völlig zufälligen Blickrichtung im Raum
         kodama.setAttribute('rotation', { x: 0, y: Math.random() * 360, z: 0 });
 
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Material-Anpassung: Porzellan-Weißer Körper & dunkle Gesichtszüge
+        // Material-Anpassung: Milchig-weiße Körper & dunkle Gesichtszüge
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
@@ -187,30 +180,21 @@ AFRAME.registerComponent('magic-forest', {
         sceneEl.appendChild(kodama);
       }
 
-      // DIREKTER BESUCH BEIM START: Kodama 1 macht sich sofort auf den Weg zum User!
+      // NACH WENIGEN SEKUNDEN (3,5 Sek.): KODAMA 1 FLIEGT AUF DEN USER ZU & SAGT "HALLO"
       setTimeout(() => {
         if (allKodamaEntities.length > 0) {
           let agent = allKodamaEntities[0].components['kodama-agent'];
           if (agent) {
-            agent.state = 'APPROACH_USER';
-            isAnyKodamaVisitingUser = true;
-            window.playKodamaSound(1.1, 1.25);
-
-            setTimeout(() => {
-              if (agent.state === 'APPROACH_USER') {
-                agent.pickZoneTarget();
-                agent.state = 'RETURN_TO_ZONE';
-              }
-            }, 10000);
+            agent.startGreetingApproach();
           }
         }
-      }, 1200);
+      }, 3500);
     });
   }
 });
 
 // ============================================================
-// AGENTEN-LOGIK: NATÜRLICHE ROTATION, DYNAMIK & SCHWEBENDE SITZER
+// AGENTEN-LOGIK: KOPF-WACKELN, ECHO-KETTENREAKTION & BEGRÜSSUNG
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -228,23 +212,79 @@ AFRAME.registerComponent('kodama-agent', {
   init: function () {
     this.cameraEl = this.el.sceneEl.camera.el;
 
-    this.breathSpeed = 0.4 + Math.random() * 0.4;
-    this.floatSpeed = 0.5 + Math.random() * 0.5;
+    this.breathSpeed = 0.35 + Math.random() * 0.35;
+    this.floatSpeed = 0.45 + Math.random() * 0.45;
     this.floatHeight = 0.035 + Math.random() * 0.025;
     this.timeOffset = Math.random() * 100;
 
+    this.shakeTimer = 0; // Für das synchrone Kopf-Wackeln beim Klappern
     this.targetQuaternion = new THREE.Quaternion();
     this.dummy = new THREE.Object3D();
 
-    this.state = this.data.isSitting ? 'SIT_BREATHE' : 'WANDER_ZONE';
+    this.state = this.data.isSitting ? 'SIT_MA_STILL' : 'HOVER_MA_STILL';
     this.targetPos = new THREE.Vector3();
     this.pickZoneTarget();
 
     this.scheduleNextDecision();
   },
 
+  // STARTET DEN BEGRÜSSUNGS-ANFLUG ("HALLO SAGEN")
+  startGreetingApproach: function () {
+    this.state = 'APPROACH_USER';
+    isAnyKodamaVisitingUser = true;
+
+    // Spielt Ton & löst das synchrone Kopf-Wackeln aus!
+    this.triggerSoundAndHeadShake(1.2, 1.25);
+
+    setTimeout(() => {
+      if (this.state === 'APPROACH_USER') {
+        this.pickZoneTarget();
+        this.state = 'RETURN_TO_ZONE';
+      }
+    }, 9500);
+  },
+
+  // KOPF-WACKELN & SOUND SYNCHRONISIEREN
+  triggerSoundAndHeadShake: function (volFactor = 1.0, pitchFactor = 1.0) {
+    this.shakeTimer = 0.75; // 0.75 Sekunden Kopf-Zucken
+    window.playKodamaSound(volFactor, pitchFactor);
+
+    // KETTENREAKTION: Nachbar-Kodama reagiert verzögert mit Echo!
+    this.triggerEchoToNeighbors();
+  },
+
+  // ECHOSEQUENZ: NACHBAR-KODAMAS REAGIEREN MIT LEISEM ECHO
+  triggerEchoToNeighbors: function () {
+    let myPos = this.el.object3D.position;
+
+    allKodamaEntities.forEach(otherEl => {
+      if (otherEl !== this.el) {
+        let otherAgent = otherEl.components['kodama-agent'];
+        if (otherAgent) {
+          let otherPos = otherEl.object3D.position;
+          let dist = myPos.distanceTo(otherPos);
+
+          // Wenn ein Nachbar innerhalb von 4.5m Reichweite steht: 40% Chance auf Echo-Antwort
+          if (dist < 4.5 && Math.random() < 0.40) {
+            let echoDelay = 400 + Math.random() * 600; // 0.4s bis 1.0s Verzögerung
+            setTimeout(() => {
+              otherAgent.respondToEcho();
+            }, echoDelay);
+          }
+        }
+      }
+    });
+  },
+
+  respondToEcho: function () {
+    // Leises Echo-Antwortklappern + leichtes Kopfwackeln
+    this.shakeTimer = 0.50;
+    window.playKodamaSound(0.6, 1.15);
+  },
+
   scheduleNextDecision: function () {
-    let interval = 4000 + Math.random() * 3500;
+    // Mehr "Ma" (Innehalten): Längere Pausen voller Stille (5.5 bis 10 Sekunden)
+    let interval = 5500 + Math.random() * 4500;
 
     setTimeout(() => {
       this.makeDecision();
@@ -255,53 +295,45 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
-    if (Math.random() < 0.20) {
-      window.playKodamaSound(1.0, 1.0);
+    // 22% Chance für Klappern & Kopf-Wackeln
+    if (Math.random() < 0.22) {
+      this.triggerSoundAndHeadShake(1.0, 1.0);
     }
 
     if (this.data.isSitting) {
-      // SITZENDE KODAMAS (3, 4, 5): SCHWEBEN SANFT AM ORT & DREHEN SICH ZUFÄLLIG UMBHER
-      if (rand < 0.60) {
-        this.state = 'SIT_BREATHE';
+      // SITZENDE KODAMAS (3, 4, 5): "MA"-STILLE ODER SANFTES DREHEN
+      if (rand < 0.65) {
+        this.state = 'SIT_MA_STILL'; // Verharren in friedlicher Stille
       } else {
-        this.state = 'SIT_ROTATE';
-        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.8;
+        this.state = 'SIT_ROTATE';   // Sanfte Drehung im Raum
+        let randomAngle = (Math.random() - 0.5) * Math.PI * 0.7;
         this.dummy.position.copy(this.el.object3D.position);
         this.dummy.rotation.copy(this.el.object3D.rotation);
         this.dummy.rotation.y += randomAngle;
         this.targetQuaternion.copy(this.dummy.quaternion);
       }
     } else {
-      // FLIEGENDE KODAMAS (1, 2, 6): AKTIVE, FLÜSSIGE ORTSVERÄNDERUNGEN
-      if (rand < 0.55) {
-        // 55% Chance: Flug zu neuem Ziel in ihrer Zone
-        this.state = 'WANDER_ZONE';
+      // FLIEGENDE KODAMAS (1, 2, 6): VERHALTEN ZWISCHEN GLEITEN & "MA"-PAUSEN
+      if (rand < 0.35) {
+        this.state = 'HOVER_MA_STILL'; // Verharren schwebend am Ort
+
+      } else if (rand < 0.70) {
+        this.state = 'WANDER_ZONE';   // Sanfter Flug in der Zone
         this.pickZoneTarget();
 
-      } else if (rand < 0.85 && allKodamaEntities.length > 1) {
-        // 30% Chance: Besuch bei einem anderen Geister-Kumpel
+      } else if (rand < 0.90 && allKodamaEntities.length > 1) {
+        // Besuch beim Nachbarn im Paar
         let otherIndex = (this.data.id + 1 + Math.floor(Math.random() * (allKodamaEntities.length - 1))) % allKodamaEntities.length;
         let otherPos = allKodamaEntities[otherIndex].object3D.position;
         this.targetPos.set(
-          otherPos.x + (Math.random() - 0.5) * 2.8,
-          otherPos.y + (Math.random() - 0.5) * 0.8,
-          otherPos.z + (Math.random() - 0.5) * 2.8
+          otherPos.x + (Math.random() - 0.5) * 2.2,
+          otherPos.y + (Math.random() - 0.5) * 0.6,
+          otherPos.z + (Math.random() - 0.5) * 2.2
         );
         this.state = 'VISIT_OTHER_KODAMA';
 
       } else if (this.data.id === 1 && !isAnyKodamaVisitingUser) {
-        // Spontaner schüchterner Anflug zum User
-        this.state = 'APPROACH_USER';
-        isAnyKodamaVisitingUser = true;
-
-        window.playKodamaSound(1.0, 1.2);
-
-        setTimeout(() => {
-          if (this.state === 'APPROACH_USER') {
-            this.pickZoneTarget();
-            this.state = 'RETURN_TO_ZONE';
-          }
-        }, 9000);
+        this.startGreetingApproach();
       }
     }
   },
@@ -314,7 +346,6 @@ AFRAME.registerComponent('kodama-agent', {
     );
   },
 
-  // Geschmeidiges Drehen in Flug- bzw. Zielrichtung
   smoothLookAtTarget: function (targetVector, deltaSec, speed = 1.4) {
     let pos = this.el.object3D.position;
     this.dummy.position.copy(pos);
@@ -328,7 +359,16 @@ AFRAME.registerComponent('kodama-agent', {
 
     let pos = this.el.object3D.position;
 
-    // --- SITZENDE KODAMAS (3, 4, 5): BLEIBEN AN ORT UND STELLE X/Z, SCHWEBEN SANFT AUF & AB ---
+    // --- SYNCHRONES KOPF-WACKELN BEI KLAPPERSOUND ---
+    if (this.shakeTimer > 0) {
+      this.shakeTimer -= deltaSec;
+      // Schnelles, feines Zucken um die Y- & Z-Achse (Kopfklappern)
+      let shakeJitter = Math.sin(this.shakeTimer * 35) * 0.08;
+      this.el.object3D.rotation.y += shakeJitter;
+      this.el.object3D.rotation.z += shakeJitter * 0.5;
+    }
+
+    // --- SITZENDE KODAMAS (3, 4, 5): SCHWEBEN AN ORT UND STELLE X/Z ---
     if (this.data.isSitting) {
       let breathCycle = Math.sin(this.timeOffset * this.breathSpeed * 1.2);
       let scaleOffset = breathCycle * 0.015;
@@ -345,7 +385,7 @@ AFRAME.registerComponent('kodama-agent', {
       return;
     }
 
-    // --- FLIEGENDE KODAMAS (1, 2, 6): AKTIVE BEWEGUNG & KOLLISIONSSCHUTZ ---
+    // --- FLIEGENDE KODAMAS (1, 2, 6) ---
     let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
 
     // Weicher Anti-Kollisions-Schutz
@@ -364,7 +404,10 @@ AFRAME.registerComponent('kodama-agent', {
       }
     });
 
-    if (this.state === 'WANDER_ZONE' || this.state === 'VISIT_OTHER_KODAMA') {
+    if (this.state === 'HOVER_MA_STILL') {
+      pos.y = THREE.MathUtils.lerp(pos.y, this.data.baseY + hoverY, deltaSec * 1.2);
+
+    } else if (this.state === 'WANDER_ZONE' || this.state === 'VISIT_OTHER_KODAMA') {
       this.smoothLookAtTarget(this.targetPos, deltaSec, 1.4);
 
       let dx = this.targetPos.x - pos.x;
@@ -372,7 +415,7 @@ AFRAME.registerComponent('kodama-agent', {
       let distXZ = Math.sqrt(dx * dx + dz * dz);
 
       if (distXZ > 0.05) {
-        let step = deltaSec * 0.65 * this.data.moveSpeed;
+        let step = deltaSec * 0.60 * this.data.moveSpeed;
         pos.x += (dx / distXZ) * Math.min(step, distXZ);
         pos.z += (dz / distXZ) * Math.min(step, distXZ);
       }
@@ -381,7 +424,7 @@ AFRAME.registerComponent('kodama-agent', {
 
       if (distXZ < 0.45) {
         this.data.baseY = pos.y;
-        this.pickZoneTarget();
+        this.state = 'HOVER_MA_STILL';
       }
 
     } else if (this.state === 'APPROACH_USER') {
@@ -407,7 +450,7 @@ AFRAME.registerComponent('kodama-agent', {
       let distXZ = Math.sqrt(dx * dx + dz * dz);
 
       if (distXZ > 0.05) {
-        let step = deltaSec * 0.65 * this.data.moveSpeed;
+        let step = deltaSec * 0.60 * this.data.moveSpeed;
         pos.x += (dx / distXZ) * Math.min(step, distXZ);
         pos.z += (dz / distXZ) * Math.min(step, distXZ);
       }
@@ -417,7 +460,7 @@ AFRAME.registerComponent('kodama-agent', {
       if (distXZ < 0.50) {
         isAnyKodamaVisitingUser = false;
         this.data.baseY = pos.y;
-        this.state = 'WANDER_ZONE';
+        this.state = 'HOVER_MA_STILL';
       }
     }
   }
