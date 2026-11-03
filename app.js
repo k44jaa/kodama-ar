@@ -1,11 +1,12 @@
 // ============================================================
 // KODAMA AR - CREATIVE SPACE LEUPHANA
-// 6 Autonome Geister: Automatischer JS-Texturfilter (Grün -> Weiß),
-// Gesichter bleiben erhalten, dezent grünes Leuchten & leise Akustik
+// 6 Autonome Geister: Milchig-weiße Körper, gestochen scharfe Gesichter
+// (JS-Filter mit Texture-Reload), leise Akustik & ortsfeste Sitzer (3, 4 & 5)
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
 
+// Geheimnisvolle, extrem subtile Klapper-Funktion
 window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
   try {
     let snd = new Audio('./assets/sound.mp3');
@@ -59,13 +60,13 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Material & Textur-Filterung direkt in JS
+        // Material-Anpassung & Gesichter-Erleuchtung
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
               if (node.isMesh) {
-                // 1. Versteckte Vertex-Colors aus Blender löschen
+                // Versteckte Vertex-Colors löschen
                 if (node.geometry && node.geometry.attributes.color) {
                   node.geometry.deleteAttribute('color');
                 }
@@ -73,39 +74,66 @@ AFRAME.registerComponent('magic-forest', {
                 if (node.material) {
                   node.material.vertexColors = false;
 
-                  // 2. Falls eine Textur geladen ist: Grüne Hintergrundpixel zu Weiß filtern!
+                  // Textur-Anpassung: Augen & Mund hervorheben, Hintergrund weiß machen
                   if (node.material.map && node.material.map.image) {
-                    try {
-                      let img = node.material.map.image;
-                      let canvas = document.createElement('canvas');
-                      canvas.width = img.width || 512;
-                      canvas.height = img.height || 512;
-                      let ctx = canvas.getContext('2d');
-                      ctx.drawImage(img, 0, 0);
+                    let processTexture = () => {
+                      try {
+                        let img = node.material.map.image;
+                        let width = img.width || img.videoWidth || 512;
+                        let height = img.height || img.videoHeight || 512;
 
-                      let imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                      let data = imgData.data;
+                        let canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        let ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
 
-                      // Alle nicht-dunklen Pixel in milchiges Weiß verwandeln
-                      for (let p = 0; p < data.length; p += 4) {
-                        let avg = (data[p] + data[p+1] + data[p+2]) / 3;
-                        if (avg > 50) { // Kein Auge/Mund -> Weiß einfärben
-                          data[p]   = 245; // R
-                          data[p+1] = 250; // G
-                          data[p+2] = 245; // B
+                        let imgData = ctx.getImageData(0, 0, width, height);
+                        let data = imgData.data;
+
+                        // Augen & Mund (dunkle Pixel) schützen, grünen Hintergrund weiß machen
+                        for (let p = 0; p < data.length; p += 4) {
+                          let r = data[p];
+                          let g = data[p+1];
+                          let b = data[p+2];
+                          let brightness = (r + g + b) / 3;
+
+                          if (brightness < 110) {
+                            // Gesichtszüge knackig dunkel halten
+                            data[p]   = Math.min(r, 30);
+                            data[p+1] = Math.min(g, 30);
+                            data[p+2] = Math.min(b, 30);
+                            data[p+3] = 255;
+                          } else {
+                            // Körperhintergrund auf milchiges Porzellan-Weiß setzen
+                            data[p]   = 245;
+                            data[p+1] = 250;
+                            data[p+2] = 245;
+                            data[p+3] = 255;
+                          }
                         }
-                      }
-                      ctx.putImageData(imgData, 0, 0);
+                        ctx.putImageData(imgData, 0, 0);
 
-                      let newTex = new THREE.CanvasTexture(canvas);
-                      newTex.flipY = node.material.map.flipY;
-                      node.material.map = newTex;
-                    } catch (e) {
-                      console.log("Textur-Filter Hinweis:", e);
+                        let newTex = new THREE.CanvasTexture(canvas);
+                        newTex.flipY = node.material.map.flipY;
+                        newTex.needsUpdate = true; // Wichtig: Zwingt WebGL zum Neu-Rendern der Gesichter!
+
+                        node.material.map = newTex;
+                        node.material.needsUpdate = true;
+                      } catch (e) {
+                        console.warn("Texturverarbeitung Hinweis:", e);
+                      }
+                    };
+
+                    let img = node.material.map.image;
+                    if (img instanceof HTMLImageElement && !img.complete) {
+                      img.onload = processTexture;
+                    } else {
+                      processTexture();
                     }
                   }
 
-                  // 3. Körperfarbe auf Reinweiß setzen & Transparenz löschen
+                  // Grundeigenschaften des Materials
                   node.material.transparent = false;
                   node.material.depthWrite = true;
                   node.material.opacity = 1.0;
