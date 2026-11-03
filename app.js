@@ -1,37 +1,26 @@
 // ============================================================
-// KODAMA AR - CREATIVE SPACE LEUPHANA (v19)
-// Ultra-Naher Gesichtskontakt (0,85m), Pitch-Drop Sound-Effect,
-// Touch-Interaktion, Waldsporen-Aura & scharfer Gesichtskontrast
+// KODAMA AR - CREATIVE SPACE LEUPHANA (v20)
+// Direkter Anflug exakt INS SICHTFELD (0.75m vor die Kamera-Linse),
+// Interaktiver Touch-Anflug, biolumineszierendes Pulsieren & Echo
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
 let allKodamaEntities = [];
 
-// Sound-Funktion mit abfallendem Tone-Glide (Pitch-Bend)
-window.playKodamaSound = function (volFactor = 1.0, pitchStart = 1.25) {
+// Sound-Funktion mit geschmeidigem Ausblenden
+window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
   try {
     let snd = new Audio('./assets/sound.mp3');
     snd.volume = Math.min(0.09, (0.045 + Math.random() * 0.025) * volFactor);
-    let currentPitch = pitchStart;
-    snd.playbackRate = currentPitch;
+    snd.playbackRate = (0.90 + Math.random() * 0.20) * pitchFactor;
     
     snd.play().then(() => {
-      let pitchSlide = setInterval(() => {
-        if (currentPitch > 0.72) {
-          currentPitch -= 0.035;
-          snd.playbackRate = currentPitch;
-        } else {
-          clearInterval(pitchSlide);
-        }
-      }, 40);
-
       setTimeout(() => {
         let fade = setInterval(() => {
           if (snd.volume > 0.005) {
             snd.volume -= 0.005;
           } else {
             clearInterval(fade);
-            clearInterval(pitchSlide);
             snd.pause();
           }
         }, 35);
@@ -53,15 +42,17 @@ AFRAME.registerComponent('magic-forest', {
       this.spawned = true;
       allKodamaEntities = [];
 
+      // 1. MAGISCHE SPOREN (Leuchtender Partikelstaub)
       this.createForestSpores(sceneEl);
 
+      // 2. PROFILE DER KODAMAS
       const PROFILES = [
-        { modelId: '#kodama-1', isSitting: false, minX: -5.0, maxX: -3.0, minZ: -5.5, maxZ: -4.0, minY: 1.10, maxY: 1.50, speed: 0.55 },
-        { modelId: '#kodama-3', isSitting: true,  minX: -4.2, maxX: -2.8, minZ: -5.0, maxZ: -3.8, minY: 0.45, maxY: 0.45, speed: 0.0 },
-        { modelId: '#kodama-2', isSitting: false, minX:  3.0, maxX:  5.0, minZ: -5.5, maxZ: -4.0, minY: 1.00, maxY: 1.40, speed: 0.55 },
-        { modelId: '#kodama-5', isSitting: true,  minX:  2.8, maxX:  4.2, minZ: -5.0, maxZ: -3.8, minY: 0.55, maxY: 0.55, speed: 0.0 },
-        { modelId: '#kodama-4', isSitting: true,  minX: -1.0, maxX:  1.0, minZ: -7.0, maxZ: -5.5, minY: 0.35, maxY: 0.35, speed: 0.0 },
-        { modelId: '#kodama-6', isSitting: false, minX: -3.5, maxX:  3.5, minZ: -10.5, maxZ: -8.0, minY: 2.10, maxY: 2.60, speed: 0.40 }
+        { modelId: '#kodama-1', isSitting: false, minX: -4.5, maxX: -2.5, minZ: -5.0, maxZ: -3.5, minY: 1.10, maxY: 1.50, speed: 0.65 },
+        { modelId: '#kodama-3', isSitting: true,  minX: -3.8, maxX: -2.2, minZ: -4.5, maxZ: -3.5, minY: 0.45, maxY: 0.45, speed: 0.0 },
+        { modelId: '#kodama-2', isSitting: false, minX:  2.5, maxX:  4.5, minZ: -5.0, maxZ: -3.5, minY: 1.00, maxY: 1.40, speed: 0.60 },
+        { modelId: '#kodama-5', isSitting: true,  minX:  2.2, maxX:  3.8, minZ: -4.5, maxZ: -3.5, minY: 0.55, maxY: 0.55, speed: 0.0 },
+        { modelId: '#kodama-4', isSitting: true,  minX: -1.0, maxX:  1.0, minZ: -6.5, maxZ: -5.0, minY: 0.35, maxY: 0.35, speed: 0.0 },
+        { modelId: '#kodama-6', isSitting: false, minX: -3.0, maxX:  3.0, minZ: -9.5, maxZ: -7.5, minY: 2.10, maxY: 2.60, speed: 0.45 }
       ];
 
       for (let i = 0; i < Math.min(this.data.count, PROFILES.length); i++) {
@@ -86,7 +77,7 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Scharfer Gesichtskontrast auf milchigem Porzellan
+        // Material-Anpassung: Scharfe Gesichtskonturen
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
@@ -172,7 +163,7 @@ AFRAME.registerComponent('magic-forest', {
           }
         });
 
-        // Touch-Aktion
+        // Touch-Interaction (Antippen auf dem Bildschirm)
         kodama.addEventListener('click', () => {
           let agent = kodama.components['kodama-agent'];
           if (agent) agent.onUserTouch();
@@ -194,18 +185,20 @@ AFRAME.registerComponent('magic-forest', {
         sceneEl.appendChild(kodama);
       }
 
-      // Begrüßung nach 3 Sekunden
+      // GARANTIERTER ANFLUG DIREKT VOR DIE LINSE NACH 2,5 SEKUNDEN
       setTimeout(() => {
         if (allKodamaEntities.length > 0) {
-          let agent = allKodamaEntities.components['kodama-agent'];
-          if (agent) agent.startGreetingApproach();
+          let agent = allKodamaEntities[0].components['kodama-agent'];
+          if (agent) {
+            agent.startGreetingApproach();
+          }
         }
-      }, 3000);
+      }, 2500);
 
-      // Kaskadierender Wald-Akkord alle 45 Sekunden
+      // Kollektives Konzert alle 40 Sekunden
       setInterval(() => {
         this.triggerForestHarmony();
-      }, 45000);
+      }, 40000);
     });
   },
 
@@ -258,7 +251,7 @@ AFRAME.registerComponent('magic-forest', {
       setTimeout(() => {
         let agent = kodamaEl.components['kodama-agent'];
         if (agent) {
-          agent.triggerSoundAndHeadShake(1.2, 1.30 - idx * 0.06);
+          agent.triggerSoundAndHeadShake(1.2, 1.20 - idx * 0.05);
           agent.pulseEmissiveGlow(0.70, 1600);
         }
       }, idx * 300);
@@ -267,7 +260,7 @@ AFRAME.registerComponent('magic-forest', {
 });
 
 // ============================================================
-// AGENTEN-LOGIK: ULTRA-NAHKONTAKT (0,85m) & KLAPPER-INTERAKTION
+// AGENTEN-LOGIK: EXAKTER ANFLUG INS SICHTFELD VOR DIE LINSE (0.75m)
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -302,23 +295,16 @@ AFRAME.registerComponent('kodama-agent', {
     this.scheduleNextDecision();
   },
 
+  // BEI TAP: GEIST FLIEGT SOFORT VOR DIE LINSE DES USERS
   onUserTouch: function () {
     this.shakeTimer = 0.90;
     this.touchJumpTimer = 0.60;
-    window.playKodamaSound(1.3, 1.40);
+    window.playKodamaSound(1.3, 1.30);
     this.pulseEmissiveGlow(0.90, 1500);
 
-    let myPos = this.el.object3D.position;
-    allKodamaEntities.forEach(otherEl => {
-      if (otherEl !== this.el) {
-        let otherAgent = otherEl.components['kodama-agent'];
-        if (otherAgent && myPos.distanceTo(otherEl.object3D.position) < 4.5) {
-          setTimeout(() => {
-            otherAgent.triggerSoundAndHeadShake(0.7, 1.15);
-          }, 300 + Math.random() * 400);
-        }
-      }
-    });
+    if (!this.data.isSitting && !isAnyKodamaVisitingUser) {
+      this.startGreetingApproach();
+    }
   },
 
   pulseEmissiveGlow: function (intensity = 0.6, durationMs = 1200) {
@@ -335,13 +321,13 @@ AFRAME.registerComponent('kodama-agent', {
     }
   },
 
-  // BEGRÜSSUNG: RÜCKT DIREKT VOR DIE LINSE (0,85m)
+  // BEGRÜSSUNGS-ANFLUG: ZIELT DIREKT INS SICHTFELD VOR DIE KAMERA-LINSE
   startGreetingApproach: function () {
     this.state = 'APPROACH_USER';
     isAnyKodamaVisitingUser = true;
 
-    this.triggerSoundAndHeadShake(1.3, 1.30);
-    this.pulseEmissiveGlow(0.75, 2000);
+    this.triggerSoundAndHeadShake(1.3, 1.25);
+    this.pulseEmissiveGlow(0.85, 2500);
 
     setTimeout(() => {
       if (this.state === 'APPROACH_USER') {
@@ -352,7 +338,7 @@ AFRAME.registerComponent('kodama-agent', {
   },
 
   triggerSoundAndHeadShake: function (volFactor = 1.0, pitchStart = 1.25) {
-    this.shakeTimer = 0.80;
+    this.shakeTimer = 0.85;
     window.playKodamaSound(volFactor, pitchStart);
     this.triggerEchoToNeighbors();
   },
@@ -365,8 +351,8 @@ AFRAME.registerComponent('kodama-agent', {
         let otherAgent = otherEl.components['kodama-agent'];
         if (otherAgent) {
           let dist = myPos.distanceTo(otherEl.object3D.position);
-          if (dist < 4.5 && Math.random() < 0.40) {
-            let echoDelay = 400 + Math.random() * 600;
+          if (dist < 4.5 && Math.random() < 0.45) {
+            let echoDelay = 350 + Math.random() * 550;
             setTimeout(() => {
               otherAgent.respondToEcho();
             }, echoDelay);
@@ -426,7 +412,7 @@ AFRAME.registerComponent('kodama-agent', {
         );
         this.state = 'VISIT_OTHER_KODAMA';
 
-      } else if (this.data.id === 1 && !isAnyKodamaVisitingUser) {
+      } else if (this.data.id === 0 && !isAnyKodamaVisitingUser) {
         this.startGreetingApproach();
       }
     }
@@ -479,7 +465,7 @@ AFRAME.registerComponent('kodama-agent', {
       touchJumpY = Math.sin(this.touchJumpTimer * Math.PI * 3) * 0.12;
     }
 
-    // Sitzende Kodamas (3, 4, 5)
+    // Sitzende Kodamas
     if (this.data.isSitting) {
       let breathCycle = Math.sin(this.timeOffset * this.breathSpeed * 1.2);
       let scaleOffset = breathCycle * 0.015;
@@ -496,7 +482,7 @@ AFRAME.registerComponent('kodama-agent', {
       return;
     }
 
-    // Fliegende Kodamas (1, 2, 6)
+    // Fliegende Kodamas
     let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight + touchJumpY;
 
     // Anti-Kollision
@@ -539,19 +525,22 @@ AFRAME.registerComponent('kodama-agent', {
       }
 
     } else if (this.state === 'APPROACH_USER') {
+      // FEHLERBEHOBEN & MATHEMATISCH PRÄZISIERT:
+      // Berechnet den Punkt EXAKT 0.75m DIREKT VOR DER KAMERA-LINSE (im aktuellen Blickfeld)
       let camPos = new THREE.Vector3();
+      let camDir = new THREE.Vector3();
       this.cameraEl.object3D.getWorldPosition(camPos);
+      this.cameraEl.object3D.getWorldDirection(camDir);
+
+      let targetFront = new THREE.Vector3()
+        .copy(camPos)
+        .addScaledVector(camDir, -0.75); // 0.75m vor der Kamera-Linse!
 
       this.smoothLookAtCamera(deltaSec, 2.2);
 
-      let dist = pos.distanceTo(camPos);
-      if (dist > 0.85) {
-        let dir = new THREE.Vector3().subVectors(camPos, pos).normalize();
-        pos.x += dir.x * deltaSec * 0.65 * this.data.moveSpeed;
-        pos.z += dir.z * deltaSec * 0.55 * this.data.moveSpeed;
-      }
-
-      pos.y = THREE.MathUtils.lerp(pos.y, camPos.y - 0.05, deltaSec * 0.9) + hoverY * 0.08;
+      // Sanfter Anflug direkt auf den Punkt im Sichtfeld
+      pos.lerp(targetFront, deltaSec * 1.2 * this.data.moveSpeed);
+      pos.y += hoverY * 0.08;
 
     } else if (this.state === 'RETURN_TO_ZONE') {
       this.smoothLookAtTarget(this.targetPos, deltaSec, 1.4);
