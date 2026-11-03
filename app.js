@@ -72,22 +72,23 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-          // Ersetzt das Blender-Material garantiert durch ein neues, solides Material
+          // Behält deine gemalten Gesichter bei, macht den Körper aber undurchsichtig
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
-              if (node.isMesh) {
-                // Erzeugt ein komplett frisches, undurchsichtiges Material
-                node.material = new THREE.MeshStandardMaterial({
-                  color: 0xf2f7f2,        // Milchiges Porzellan-Weiß
-                  roughness: 0.85,        // Matte Oberfläche
-                  metalness: 0.0,
-                  transparent: false,     // Keinerlei Transparenz!
-                  depthWrite: true,       // Korrekte Tiefen-Verdeckung
-                  emissive: 0x142017,     // Sanfter Geister-Schimmer
-                  emissiveIntensity: 0.20
-                });
+              if (node.isMesh && node.material) {
+                // Transparenz & Überlappungsfehler deaktivieren
+                node.material.transparent = false;
+                node.material.depthWrite = true;
+                node.material.opacity = 1.0;
+                
+                // Optik verfeinern (ohne deine Textur zu löschen!)
+                node.material.roughness = 0.85;
+                node.material.metalness = 0.0;
+                
+                // WICHTIG: Deine gemalte Textur (Augen/Mund) bleibt aktiv!
+                node.material.needsUpdate = true;
               }
             });
           }
