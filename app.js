@@ -1,17 +1,17 @@
 // ============================================================
-// KODAMA AR - CREATIVE SPACE LEUPHANA (v16 - Ghibli "Ma" & Echo Edition)
-// Synchronisiertes Kopf-Wackeln + Sound, Kettenreaktion (Echo),
-// Paar-Gruppierung, sanfte Stille & Anflug nach wenigen Sekunden ("Hallo sagen")
+// KODAMA AR - CREATIVE SPACE LEUPHANA (v17 - Ghibli Magic Edition)
+// Touch-Interaktion, magische Waldsporen, kollektiver Wald-Akkord,
+// Echo-Kettenreaktion & synchrone Kopfbewegung
 // ============================================================
 
 let isAnyKodamaVisitingUser = false;
 let allKodamaEntities = [];
 
-// Warmes, geschmeidiges Klappern mit sanftem Fade-Out
+// Sound-Funktion mit sanftem Fade-Out
 window.playKodamaSound = function (volFactor = 1.0, pitchFactor = 1.0) {
   try {
     let snd = new Audio('./assets/sound.mp3');
-    snd.volume = Math.min(0.07, (0.035 + Math.random() * 0.025) * volFactor);
+    snd.volume = Math.min(0.08, (0.04 + Math.random() * 0.025) * volFactor);
     snd.playbackRate = (0.90 + Math.random() * 0.18) * pitchFactor;
     
     snd.play().then(() => {
@@ -42,17 +42,15 @@ AFRAME.registerComponent('magic-forest', {
       this.spawned = true;
       allKodamaEntities = [];
 
-      // PAAR- & GRUPPEN-ANORDNUNG (Ghibli-Ökosystem mit "Ma")
+      // 1. MAGISCHE WALDSPOREN (Leuchtender Partikelstaub im Raum)
+      this.createForestSpores(sceneEl);
+
+      // 2. PAAR- & RAUM-ANORDNUNG
       const PROFILES = [
-        // PAAR 1 (Links): Kodama 1 (fliegend) & Kodama 3 (sitzend/schwebend nahebei)
         { modelId: '#kodama-1', isSitting: false, minX: -5.0, maxX: -3.0, minZ: -5.5, maxZ: -4.0, minY: 1.10, maxY: 1.50, speed: 0.50 },
         { modelId: '#kodama-3', isSitting: true,  minX: -4.2, maxX: -2.8, minZ: -5.0, maxZ: -3.8, minY: 0.45, maxY: 0.45, speed: 0.0 },
-        
-        // PAAR 2 (Rechts): Kodama 2 (fliegend) & Kodama 5 (sitzend/schwebend nahebei)
         { modelId: '#kodama-2', isSitting: false, minX:  3.0, maxX:  5.0, minZ: -5.5, maxZ: -4.0, minY: 1.00, maxY: 1.40, speed: 0.50 },
         { modelId: '#kodama-5', isSitting: true,  minX:  2.8, maxX:  4.2, minZ: -5.0, maxZ: -3.8, minY: 0.55, maxY: 0.55, speed: 0.0 },
-
-        // EINZELGÄNGER TIEF IM RAUM: Kodama 4 (sitzend zentriert) & Kodama 6 (Hüter ganz tief)
         { modelId: '#kodama-4', isSitting: true,  minX: -1.0, maxX:  1.0, minZ: -7.0, maxZ: -5.5, minY: 0.35, maxY: 0.35, speed: 0.0 },
         { modelId: '#kodama-6', isSitting: false, minX: -3.5, maxX:  3.5, minZ: -10.5, maxZ: -8.0, minY: 2.10, maxY: 2.60, speed: 0.40 }
       ];
@@ -62,6 +60,7 @@ AFRAME.registerComponent('magic-forest', {
         let kodama = document.createElement('a-entity');
 
         kodama.setAttribute('gltf-model', profile.modelId);
+        kodama.classList.add('clickable'); // Ermöglicht Touch-Klicks
 
         let animSpeed = (0.45 + Math.random() * 0.30).toFixed(2);
         kodama.setAttribute('animation-mixer', `clip: *; loop: repeat; timeScale: ${animSpeed}`);
@@ -78,7 +77,7 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Material-Anpassung: Milchig-weiße Körper & dunkle Gesichtszüge
+        // Material-Anpassung
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
@@ -164,6 +163,12 @@ AFRAME.registerComponent('magic-forest', {
           }
         });
 
+        // Event-Listener für direktes Antippen auf dem Bildschirm
+        kodama.addEventListener('click', () => {
+          let agent = kodama.components['kodama-agent'];
+          if (agent) agent.onUserTouch();
+        });
+
         kodama.setAttribute('kodama-agent', {
           id: i,
           isSitting: profile.isSitting,
@@ -180,21 +185,82 @@ AFRAME.registerComponent('magic-forest', {
         sceneEl.appendChild(kodama);
       }
 
-      // NACH WENIGEN SEKUNDEN (3,5 Sek.): KODAMA 1 FLIEGT AUF DEN USER ZU & SAGT "HALLO"
+      // Begrüßung nach 3,5 Sekunden
       setTimeout(() => {
         if (allKodamaEntities.length > 0) {
           let agent = allKodamaEntities[0].components['kodama-agent'];
-          if (agent) {
-            agent.startGreetingApproach();
-          }
+          if (agent) agent.startGreetingApproach();
         }
       }, 3500);
+
+      // 3. KOLLEKTIVER "WALD-AKKORD" (Alle 45 Sekunden ein magisches Konzert)
+      setInterval(() => {
+        this.triggerForestHarmony();
+      }, 45000);
+    });
+  },
+
+  // ERZEUGT DIE SCHWEBENDEN WALDSPOREN
+  createForestSpores: function (sceneEl) {
+    let pCount = 90;
+    let pGeo = new THREE.BufferGeometry();
+    let posArr = new Float32Array(pCount * 3);
+
+    for (let p = 0; p < pCount * 3; p += 3) {
+      posArr[p]   = (Math.random() - 0.5) * 14;
+      posArr[p+1] = 0.4 + Math.random() * 2.8;
+      posArr[p+2] = -2 - Math.random() * 9;
+    }
+    pGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+
+    let pCanvas = document.createElement('canvas');
+    pCanvas.width = 32; pCanvas.height = 32;
+    let pCtx = pCanvas.getContext('2d');
+    let grad = pCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    grad.addColorStop(0, 'rgba(180, 255, 210, 0.95)');
+    grad.addColorStop(0.4, 'rgba(80, 230, 150, 0.4)');
+    grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    pCtx.fillStyle = grad;
+    pCtx.fillRect(0, 0, 32, 32);
+
+    let pMat = new THREE.PointsMaterial({
+      size: 0.14,
+      map: new THREE.CanvasTexture(pCanvas),
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    let pMesh = new THREE.Points(pGeo, pMat);
+    sceneEl.object3D.add(pMesh);
+
+    sceneEl.addEventListener('tick', (e) => {
+      let t = e.detail.time / 1000;
+      let pos = pGeo.attributes.position.array;
+      for (let i = 1; i < pCount * 3; i += 3) {
+        pos[i] += Math.sin(t + i) * 0.0012;
+      }
+      pGeo.attributes.position.needsUpdate = true;
+    });
+  },
+
+  // RUF DIE KOLLEKTIVE MELODIE AB
+  triggerForestHarmony: function () {
+    allKodamaEntities.forEach((kodamaEl, idx) => {
+      setTimeout(() => {
+        let agent = kodamaEl.components['kodama-agent'];
+        if (agent) {
+          agent.triggerSoundAndHeadShake(1.2, 0.95 + idx * 0.08);
+          agent.pulseEmissiveGlow(0.65, 1600);
+        }
+      }, idx * 320); // Kaskadierendes Klappern von Links nach Rechts
     });
   }
 });
 
 // ============================================================
-// AGENTEN-LOGIK: KOPF-WACKELN, ECHO-KETTENREAKTION & BEGRÜSSUNG
+// AGENTEN-LOGIK: TOUCH-INTERAKTION & INDIVIDUELLE REAKTIONEN
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -217,7 +283,8 @@ AFRAME.registerComponent('kodama-agent', {
     this.floatHeight = 0.035 + Math.random() * 0.025;
     this.timeOffset = Math.random() * 100;
 
-    this.shakeTimer = 0; // Für das synchrone Kopf-Wackeln beim Klappern
+    this.shakeTimer = 0;
+    this.touchJumpTimer = 0; // Für den Touch-Freudensprung
     this.targetQuaternion = new THREE.Quaternion();
     this.dummy = new THREE.Object3D();
 
@@ -228,13 +295,47 @@ AFRAME.registerComponent('kodama-agent', {
     this.scheduleNextDecision();
   },
 
-  // STARTET DEN BEGRÜSSUNGS-ANFLUG ("HALLO SAGEN")
+  // TOUCH-REAKTION BEIM ANTIPPEN AUF DEM HANDY-BILDSCHIRM
+  onUserTouch: function () {
+    this.shakeTimer = 0.85;
+    this.touchJumpTimer = 0.60; // 0.6 Sek. Freuden-Hüpfen
+    window.playKodamaSound(1.3, 1.35); // Höhere, aufgeregte Tonhöhe
+    this.pulseEmissiveGlow(0.85, 1400);
+
+    // Nachbar-Kodamas drehen sich neugierig um
+    let myPos = this.el.object3D.position;
+    allKodamaEntities.forEach(otherEl => {
+      if (otherEl !== this.el) {
+        let otherAgent = otherEl.components['kodama-agent'];
+        if (otherAgent && myPos.distanceTo(otherEl.object3D.position) < 4.5) {
+          setTimeout(() => {
+            otherAgent.triggerSoundAndHeadShake(0.7, 1.15);
+          }, 300 + Math.random() * 400);
+        }
+      }
+    });
+  },
+
+  pulseEmissiveGlow: function (intensity = 0.6, durationMs = 1200) {
+    let mesh = this.el.getObject3D('mesh');
+    if (mesh) {
+      mesh.traverse((node) => {
+        if (node.isMesh && node.material) {
+          node.material.emissiveIntensity = intensity;
+          setTimeout(() => {
+            if (node.material) node.material.emissiveIntensity = 0.22;
+          }, durationMs);
+        }
+      });
+    }
+  },
+
   startGreetingApproach: function () {
     this.state = 'APPROACH_USER';
     isAnyKodamaVisitingUser = true;
 
-    // Spielt Ton & löst das synchrone Kopf-Wackeln aus!
     this.triggerSoundAndHeadShake(1.2, 1.25);
+    this.pulseEmissiveGlow(0.60, 1500);
 
     setTimeout(() => {
       if (this.state === 'APPROACH_USER') {
@@ -244,16 +345,12 @@ AFRAME.registerComponent('kodama-agent', {
     }, 9500);
   },
 
-  // KOPF-WACKELN & SOUND SYNCHRONISIEREN
   triggerSoundAndHeadShake: function (volFactor = 1.0, pitchFactor = 1.0) {
-    this.shakeTimer = 0.75; // 0.75 Sekunden Kopf-Zucken
+    this.shakeTimer = 0.75;
     window.playKodamaSound(volFactor, pitchFactor);
-
-    // KETTENREAKTION: Nachbar-Kodama reagiert verzögert mit Echo!
     this.triggerEchoToNeighbors();
   },
 
-  // ECHOSEQUENZ: NACHBAR-KODAMAS REAGIEREN MIT LEISEM ECHO
   triggerEchoToNeighbors: function () {
     let myPos = this.el.object3D.position;
 
@@ -261,12 +358,9 @@ AFRAME.registerComponent('kodama-agent', {
       if (otherEl !== this.el) {
         let otherAgent = otherEl.components['kodama-agent'];
         if (otherAgent) {
-          let otherPos = otherEl.object3D.position;
-          let dist = myPos.distanceTo(otherPos);
-
-          // Wenn ein Nachbar innerhalb von 4.5m Reichweite steht: 40% Chance auf Echo-Antwort
+          let dist = myPos.distanceTo(otherEl.object3D.position);
           if (dist < 4.5 && Math.random() < 0.40) {
-            let echoDelay = 400 + Math.random() * 600; // 0.4s bis 1.0s Verzögerung
+            let echoDelay = 400 + Math.random() * 600;
             setTimeout(() => {
               otherAgent.respondToEcho();
             }, echoDelay);
@@ -277,13 +371,11 @@ AFRAME.registerComponent('kodama-agent', {
   },
 
   respondToEcho: function () {
-    // Leises Echo-Antwortklappern + leichtes Kopfwackeln
     this.shakeTimer = 0.50;
     window.playKodamaSound(0.6, 1.15);
   },
 
   scheduleNextDecision: function () {
-    // Mehr "Ma" (Innehalten): Längere Pausen voller Stille (5.5 bis 10 Sekunden)
     let interval = 5500 + Math.random() * 4500;
 
     setTimeout(() => {
@@ -295,17 +387,15 @@ AFRAME.registerComponent('kodama-agent', {
   makeDecision: function () {
     let rand = Math.random();
 
-    // 22% Chance für Klappern & Kopf-Wackeln
     if (Math.random() < 0.22) {
       this.triggerSoundAndHeadShake(1.0, 1.0);
     }
 
     if (this.data.isSitting) {
-      // SITZENDE KODAMAS (3, 4, 5): "MA"-STILLE ODER SANFTES DREHEN
       if (rand < 0.65) {
-        this.state = 'SIT_MA_STILL'; // Verharren in friedlicher Stille
+        this.state = 'SIT_MA_STILL';
       } else {
-        this.state = 'SIT_ROTATE';   // Sanfte Drehung im Raum
+        this.state = 'SIT_ROTATE';
         let randomAngle = (Math.random() - 0.5) * Math.PI * 0.7;
         this.dummy.position.copy(this.el.object3D.position);
         this.dummy.rotation.copy(this.el.object3D.rotation);
@@ -313,16 +403,14 @@ AFRAME.registerComponent('kodama-agent', {
         this.targetQuaternion.copy(this.dummy.quaternion);
       }
     } else {
-      // FLIEGENDE KODAMAS (1, 2, 6): VERHALTEN ZWISCHEN GLEITEN & "MA"-PAUSEN
       if (rand < 0.35) {
-        this.state = 'HOVER_MA_STILL'; // Verharren schwebend am Ort
+        this.state = 'HOVER_MA_STILL';
 
       } else if (rand < 0.70) {
-        this.state = 'WANDER_ZONE';   // Sanfter Flug in der Zone
+        this.state = 'WANDER_ZONE';
         this.pickZoneTarget();
 
       } else if (rand < 0.90 && allKodamaEntities.length > 1) {
-        // Besuch beim Nachbarn im Paar
         let otherIndex = (this.data.id + 1 + Math.floor(Math.random() * (allKodamaEntities.length - 1))) % allKodamaEntities.length;
         let otherPos = allKodamaEntities[otherIndex].object3D.position;
         this.targetPos.set(
@@ -362,13 +450,19 @@ AFRAME.registerComponent('kodama-agent', {
     // --- SYNCHRONES KOPF-WACKELN BEI KLAPPERSOUND ---
     if (this.shakeTimer > 0) {
       this.shakeTimer -= deltaSec;
-      // Schnelles, feines Zucken um die Y- & Z-Achse (Kopfklappern)
       let shakeJitter = Math.sin(this.shakeTimer * 35) * 0.08;
       this.el.object3D.rotation.y += shakeJitter;
       this.el.object3D.rotation.z += shakeJitter * 0.5;
     }
 
-    // --- SITZENDE KODAMAS (3, 4, 5): SCHWEBEN AN ORT UND STELLE X/Z ---
+    // --- FREUDEN-HÜPFEN BEIM ANTIPPEN ---
+    let touchJumpY = 0;
+    if (this.touchJumpTimer > 0) {
+      this.touchJumpTimer -= deltaSec;
+      touchJumpY = Math.sin(this.touchJumpTimer * Math.PI * 3) * 0.12;
+    }
+
+    // --- SITZENDE KODAMAS (3, 4, 5) ---
     if (this.data.isSitting) {
       let breathCycle = Math.sin(this.timeOffset * this.breathSpeed * 1.2);
       let scaleOffset = breathCycle * 0.015;
@@ -376,7 +470,7 @@ AFRAME.registerComponent('kodama-agent', {
       this.el.object3D.scale.set(currentScale, currentScale + (scaleOffset * 0.3), currentScale);
 
       let floatY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
-      pos.y = this.data.baseY + floatY;
+      pos.y = this.data.baseY + floatY + touchJumpY;
 
       if (this.state === 'SIT_ROTATE') {
         this.el.object3D.quaternion.slerp(this.targetQuaternion, deltaSec * 0.8);
@@ -386,9 +480,9 @@ AFRAME.registerComponent('kodama-agent', {
     }
 
     // --- FLIEGENDE KODAMAS (1, 2, 6) ---
-    let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight;
+    let hoverY = Math.sin(this.timeOffset * this.floatSpeed) * this.floatHeight + touchJumpY;
 
-    // Weicher Anti-Kollisions-Schutz
+    // Kollisionsschutz
     allKodamaEntities.forEach(other => {
       if (other !== this.el) {
         let otherPos = other.object3D.position;
