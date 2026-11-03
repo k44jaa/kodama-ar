@@ -1,13 +1,10 @@
 // ============================================================
-// KODAMA AR - CREATIVE SPACE LEUPHANA (v21 - Direct Face Focus)
-// Korrigierter Gesichts-Winkel zur Kamera (-90° / 90° Fix),
-// direkter Anflug 0,75m vor die Linse & 85%+ Gesichts-Ausrichtung
+// KODAMA AR - CREATIVE SPACE LEUPHANA (v22 - Perfect Touch & Distance)
+// Korrigierter Begrüßungsabstand (1,20m), voll funktionsfähige
+// Touch-Klick-Interaktion mit Leuchten, Sprung & Klapper-Echo
 // ============================================================
 
-// ROTATIONS-KORREKTUR FÜR DIE BLENDER-GESICHTER:
-// Da Modelle in Blender oft seitlich (+X) schauen, dreht -90° (oder 90°)
-// das Gesicht mathematisch direkt frontal zu deiner Smartphone-Kamera!
-const MODEL_FACE_ANGLE_RAD = -Math.PI / 2; // -90 Grad Drehung
+const MODEL_FACE_ANGLE_RAD = -Math.PI / 2; // -90 Grad Drehung für Frontalblick
 
 let isAnyKodamaVisitingUser = false;
 let allKodamaEntities = [];
@@ -80,12 +77,14 @@ AFRAME.registerComponent('magic-forest', {
         let scale = (0.11 + Math.random() * 0.02).toFixed(3);
         kodama.setAttribute('scale', `${scale} ${scale} ${scale}`);
 
-        // Material-Anpassung: Kontrastreiche Gesichtszüge
+        // Material-Anpassung & Touch-Vorbereitung aller Sub-Meshes
         kodama.addEventListener('model-loaded', () => {
           let mesh = kodama.getObject3D('mesh');
           if (mesh) {
             mesh.traverse((node) => {
               if (node.isMesh) {
+                node.el = kodama; // Verknüpft Untermesh direkt mit der Kodama-Entity für Touch-Klicks
+                
                 if (node.geometry && node.geometry.attributes.color) {
                   node.geometry.deleteAttribute('color');
                 }
@@ -166,11 +165,14 @@ AFRAME.registerComponent('magic-forest', {
           }
         });
 
-        // Touch-Interaction
-        kodama.addEventListener('click', () => {
+        // Touch-Interaction (Sowohl Klick-Event als auch Raycast-Fallback)
+        let handleTouch = () => {
           let agent = kodama.components['kodama-agent'];
           if (agent) agent.onUserTouch();
-        });
+        };
+
+        kodama.addEventListener('click', handleTouch);
+        kodama.addEventListener('mousedown', handleTouch);
 
         kodama.setAttribute('kodama-agent', {
           id: i,
@@ -188,7 +190,7 @@ AFRAME.registerComponent('magic-forest', {
         sceneEl.appendChild(kodama);
       }
 
-      // GARANTIERTER NAHKONTAKT-ANFLUG DIREKT PARALLEL ZUM START
+      // GARANTIERTER BEGRÜSSUNGS-ANFLUG NACH 2,2 SEKUNDEN
       setTimeout(() => {
         if (allKodamaEntities.length > 0) {
           let firstKodama = allKodamaEntities[0];
@@ -263,7 +265,7 @@ AFRAME.registerComponent('magic-forest', {
 });
 
 // ============================================================
-// AGENTEN-LOGIK: GESICHTS-AUSRICHTUNG ZUR KAMERA
+// AGENTEN-LOGIK: TOUCH-REAKTION & BEGRÜSSUNGS-ANFLUG (1,20m ABSTAND)
 // ============================================================
 AFRAME.registerComponent('kodama-agent', {
   schema: {
@@ -298,11 +300,29 @@ AFRAME.registerComponent('kodama-agent', {
     this.scheduleNextDecision();
   },
 
+  // TOUCH-REAKTION BEIM ANTIPPEN DEM DISPLAY
   onUserTouch: function () {
     this.shakeTimer = 0.90;
     this.touchJumpTimer = 0.60;
-    window.playKodamaSound(1.3, 1.30);
-    this.pulseEmissiveGlow(0.90, 1500);
+    window.playKodamaSound(1.3, 1.35); // Höheres, fröhliches Klappern
+    this.pulseEmissiveGlow(0.95, 1600); // Intensiver smaragdgrüner Lichtimpuls
+
+    // Nachbarn in der Nähe reagieren mit leisem Echo
+    let myPos = this.el.object3D.position;
+    allKodamaEntities.forEach(otherEl => {
+      if (otherEl !== this.el) {
+        let otherAgent = otherEl.components['kodama-agent'];
+        if (otherAgent) {
+          let dist = myPos.distanceTo(otherEl.object3D.position);
+          if (dist < 4.5 && Math.random() < 0.50) {
+            let echoDelay = 300 + Math.random() * 450;
+            setTimeout(() => {
+              otherAgent.respondToEcho();
+            }, echoDelay);
+          }
+        }
+      }
+    });
 
     if (!this.data.isSitting && !isAnyKodamaVisitingUser) {
       this.startGreetingApproach();
@@ -323,6 +343,7 @@ AFRAME.registerComponent('kodama-agent', {
     }
   },
 
+  // BEGRÜSSUNGS-ANFLUG: HÄLT JETZT BEI ANGENEHMEN 1,20 METER ABSTAND AN!
   startGreetingApproach: function () {
     this.state = 'APPROACH_USER';
     isAnyKodamaVisitingUser = true;
@@ -385,7 +406,6 @@ AFRAME.registerComponent('kodama-agent', {
     }
 
     if (this.data.isSitting) {
-      // Sitzende Kodamas schauen zu 85% direkt zum Besucher
       if (rand < 0.85) {
         this.state = 'SIT_LOOK_USER';
       } else {
@@ -397,7 +417,6 @@ AFRAME.registerComponent('kodama-agent', {
         this.targetQuaternion.copy(this.dummy.quaternion);
       }
     } else {
-      // Fliegende Kodamas halten zu 85% Blickkontakt zum Besucher
       if (rand < 0.50) {
         this.state = 'HOVER_LOOK_USER';
 
@@ -419,7 +438,6 @@ AFRAME.registerComponent('kodama-agent', {
     );
   },
 
-  // GARANTIERT DIE EXAKTE GESICHTSAUSRICHTUNG ZUR LINSE MIT DREHWINKELKORREKTUR
   smoothLookAtCamera: function (deltaSec, speed = 2.4) {
     let camPos = new THREE.Vector3();
     this.cameraEl.object3D.getWorldPosition(camPos);
@@ -427,8 +445,6 @@ AFRAME.registerComponent('kodama-agent', {
     let pos = this.el.object3D.position;
     this.dummy.position.copy(pos);
     this.dummy.lookAt(camPos.x, pos.y, camPos.z);
-
-    // Dreht die Gesichtsseite des Blender-Modells direkt zum Smartphone!
     this.dummy.rotateY(MODEL_FACE_ANGLE_RAD);
 
     this.el.object3D.quaternion.slerp(this.dummy.quaternion, deltaSec * speed);
@@ -531,10 +547,10 @@ AFRAME.registerComponent('kodama-agent', {
       this.cameraEl.object3D.getWorldPosition(camPos);
       this.cameraEl.object3D.getWorldDirection(camDir);
 
-      // Zielt exakt 0,75 Meter vor deine Smartphone-Linse
+      // Schwebt auf genau 1,20 Meter Abstand zentral vor deine Linse
       let targetFront = new THREE.Vector3()
         .copy(camPos)
-        .addScaledVector(camDir, -0.75);
+        .addScaledVector(camDir, -1.20);
 
       this.smoothLookAtCamera(deltaSec, 2.5);
 
