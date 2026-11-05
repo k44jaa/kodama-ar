@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  kodama-ar:
+    build: .
+    container_name: kodama-ar-app
+    ports:
+      - "8080:80"
+    restart: always
