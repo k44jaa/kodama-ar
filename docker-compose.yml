@@ -1,9 +1,9 @@
-version: '3.8'
-
+# To try the site on your own computer: docker compose up --build,
+# then open http://localhost:8080 (see README for testing on a phone).
 services:
   kodama-ar:
     build: .
-    container_name: kodama-ar-app
     ports:
-      - "8080:80"
-    restart: always
+      # Only reachable from this computer.
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
